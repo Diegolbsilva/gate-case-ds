@@ -1,0 +1,238 @@
+# Cadastro das entidades avaliadas no prototipo GATE/MPRJ.
+# Fonte de cada valor: exploracao manual de 09 e 10/10/2026.
+# {ano} nas URLs e substituido pelo exercicio avaliado.
+# metodo: api (chamada a API do fornecedor), pagina (pagina com endereco direto, sem interacao complexa),
+# navegador (exige navegador automatizado: JavaScript, cliques, filtros, menus).
+
+coleta:
+  janela: [1366, 768]        # tamanho fixo da janela, para o 1.2 (rolagem) ser reproduzivel
+  tentativas: 3              # novas tentativas antes de registrar "Indisponivel"
+  # Identidade honesta do coletor (decidido em 10/10/2026). O Chromium headless padrao ("HeadlessChrome")
+  # recebe 403 Forbidden na Betha; com este User-Agent o acesso funciona sem disfarce.
+  # Reserva, se algum portal bloquear: navegador visivel (headless=False).
+  user_agent: "GATE-MPRJ-Prototipo/0.1 (+https://github.com/Diegolbsilva/gate-case-ds)"
+  unidade_avaliada: "Poder Executivo municipal (Prefeitura, fundos e autarquias), sem a Camara"
+
+entidades:
+
+  - id: japeri
+    nome: "Prefeitura Municipal de Japeri"
+    municipio: "Japeri"
+    tipo: prefeitura
+    fornecedor: "GeoSiap / Grupo Embras"
+    site_oficial: "https://japeri.rj.gov.br/"
+    portal: "https://japeri.geosiap.net.br/portal-transparencia/home"
+    historico_urls: []
+    dominios_permitidos:
+      - "japeri.rj.gov.br"
+      - "japeri.geosiap.net.br"
+      - "falabr.cgu.gov.br"            # e-SIC na plataforma federal (Fala.BR)
+    entidades_nao_confundir:
+      - nome: ["Camara Municipal de Japeri", "Câmara Municipal de Japeri"]   # aceitar com e sem acento
+        url_atual: "mesmo portal GeoSiap, entidade id 1"
+        url_antiga: "http://rj.portaldatransparencia.com.br/camara/japeri/"   # em 10/10/2026: "SERVIÇO INDISPONÍVEL PARA ESTE MUNICÍPIO" (sem HTTPS)
+    api:
+      base: "https://japeri.geosiap.net.br/portal-transparencia/api"   # prefixo: sozinho da 404; usar base + caminho (ex.: base + /sis_entidade)
+      documentacao: "https://japeri.geosiap.net.br/portal-transparencia/api-docs"
+      lista_entidades: "/sis_entidade"           # Prefeitura: campo principal = "1" (id "10")
+      entidades_excluidas: ["1"]                 # Camara Municipal; demais entidades (fundos, PREVIJAPERI) entram
+    criterios:
+      "1.2":
+        metodo: navegador
+        url: "https://japeri.rj.gov.br/"
+        observacao: "Menu Transparência > Transparência: 2 cliques ate o portal (Parcial no gabarito)"
+      "4.1":
+        metodo: api
+        url: "/execucao/despesas_detalhadas/despesas_detalhadas"
+        parametros: {id_entidade: "<cada entidade>", data_inicial: "AAAA-MM-DD", data_final: "AAAA-MM-DD"}
+        observacao: "Usar data_inicial e data_final (o parametro 'ano' nao respondeu). Valores vem como texto 'R$ 1.234,56'. CPF completo em doc_pessoa: mascarar. Alternativa navegador: Execução Orçamentária > Despesas Detalhadas > Pesquisar"
+      "4.6":
+        metodo: api
+        url: "/execucao/despesas_detalhadas/despesas_detalhadas"
+        observacao: "Data maxima de dt_doc_despesa. O rotulo 'dados atualizados em' do rodape acompanha a hora da visita: nao usar sozinho"
+      "12.1":
+        metodo: pagina
+        url: "https://japeri.geosiap.net.br/portal-transparencia/publicacoes?id_publicacao_tipo=5"
+        observacao: "Selecionar a entidade e clicar em Pesquisar (sem captcha). Arvore Exercício > Anexo > Quadrimestre. Nao ha endpoint de publicacoes na API. Mesmo arquivo aparece em quadrimestres diferentes: comparar hash"
+      "15.4":
+        metodo: pagina
+        url: "https://falabr.cgu.gov.br/v2/?uf=rj&municipio=japeri"
+        observacao: "Portal > Acesso à Informação > Atendimento / Ouvidoria (nova aba). Capa generica do Fala.BR, sem prazos nem autoridade de Japeri (Nao atende no gabarito). Fechar banner de cookies"
+      "16.2":
+        metodo: navegador
+        url: "https://japeri.geosiap.net.br/portal-transparencia/home"
+        observacao: "Link 'Alto Contraste' no topo"
+
+  - id: duque_de_caxias
+    nome: "Prefeitura Municipal de Duque de Caxias"
+    municipio: "Duque de Caxias"
+    tipo: prefeitura
+    fornecedor: "Portal: Modernizacao Informatica. Site: proprio (Secretaria de Governo / Subsecretaria de Tecnologia)"
+    site_oficial: "https://duquedecaxias.rj.gov.br/"        # redireciona para https://portal.duquedecaxias.rj.gov.br/
+    portal: "https://transparencia.duquedecaxias.rj.gov.br/"
+    historico_urls: []
+    dominios_permitidos:
+      - "duquedecaxias.rj.gov.br"
+      - "portal.duquedecaxias.rj.gov.br"
+      - "transparencia.duquedecaxias.rj.gov.br"
+    api:
+      base: "https://transparencia.duquedecaxias.rj.gov.br/sincronia/apidados.rule?sys=LAI"
+      documentacao: "Portal > API de Dados Abertos (Dados Abertos) > Documentação uso APIs"
+      documentacao_servicos: "https://transparencia.duquedecaxias.rj.gov.br/ver20230623/tmp/json_api/{servico}.json"
+      corpo: {api: "<servico>", ano: "<inteiro>"}
+      catalogo: "consulta_api"                   # devolve a lista de servicos e parametros
+      observacao: "Metodo HTTP nao informado na tela: testar no codigo. Alguns servicos so retornam o ano corrente"
+    criterios:
+      "1.2":
+        metodo: navegador
+        url: "https://duquedecaxias.rj.gov.br/"
+        observacao: "Fechar pop-up. Icone 'PORTAL DA TRANSPARÊNCIA' na grade de acesso rapido, abaixo do carrossel (precisa rolar); abre em nova aba. Icone 'CÂMARA MUNICIPAL' ao lado: nao confundir"
+      "4.1":
+        metodo: api
+        servico: "despesas_todas"
+        observacao: "Alternativa navegador bloqueada por reCAPTCHA: icone 'Despesas, Subvenções, Ordem Cronológica, Execução Orçamentária e Financeira' > 'Despesas - Todas'. Tabela em formato longo (uma linha por fase). Ignorar linhas 'TOTAL DO MÊS (CONSOLIDADO)'. CPF completo: mascarar"
+      "4.6":
+        metodo: api
+        servico: "despesas_todas"
+        observacao: "Data maxima dos registros. Alternativa sem captcha: cabecalho 'Última Atualização (Empenhado/Liquidado/Pago)' da mesma pagina"
+      "12.1":
+        metodo: api
+        servico: "consulta_rgf_m2"
+        observacao: "Alternativa navegador (reCAPTCHA): Prestação de Contas > Relatório de Gestão Fiscal (RGF). 5 demonstrativos por quadrimestre: agrupar por (ano, quadrimestre). Link de download em pasta tmp: guardar arquivo e hash"
+      "15.4":
+        metodo: navegador
+        url:
+          - "Portal > Pedido de Informação (SIC e e-SIC) > 02 - Serviço de Informação ao Cidadão - Eletrônico (primeiro passo)"
+          - "Portal > Pedido de Informação (SIC e e-SIC) > 03 - Interposição de Recurso > Orientações sobre Recurso"
+        observacao: "Pedido em texto HTML; recurso em infografico (imagem, OCR). Juntar as duas paginas antes do LLM. Nao seguir ate o login do Colab"
+      "16.2":
+        metodo: navegador
+        url: "https://transparencia.duquedecaxias.rj.gov.br/"
+        observacao: "Opcao 'Alto contraste' dentro do menu do icone de acessibilidade (canto inferior direito): procurar no HTML completo"
+    observacao_geral: "Conteudo embutido nao muda a URL do navegador: so da para chegar navegando pelos icones. Erro intermitente 'Network error IOException: Address already in use: connect' na primeira carga: tentar de novo"
+
+  - id: itaborai
+    nome: "Prefeitura Municipal de Itaborai"
+    municipio: "Itaborai"
+    tipo: prefeitura
+    fornecedor: "Portal: proprio (SEMFAT). Despesas: Contas Publicas da Supernova"
+    site_oficial: "https://site.ib.itaborai.rj.gov.br/"
+    portal: "https://transparencianovo.ib.itaborai.rj.gov.br/"
+    historico_urls: []                  # subdominio 'transparencianovo' sugere portal anterior; endereco antigo nao conhecido
+    dominios_permitidos:
+      - "site.ib.itaborai.rj.gov.br"
+      - "transparencianovo.ib.itaborai.rj.gov.br"
+      - "itaborai.supernova.com.br"     # sistema de despesas, porta 8443
+    api: null
+    criterios:
+      "1.2":
+        metodo: navegador
+        url: "https://site.ib.itaborai.rj.gov.br/"
+        observacao: "Fechar pop-up. Menu 'Transparência' no topo; link 'Portal da Transparência' so aparece no submenu ao passar o mouse (Parcial no gabarito)"
+      "4.1":
+        metodo: navegador
+        url: "https://itaborai.supernova.com.br:8443/contaspublicas/despesa.xhtml?exercicio={ano}"
+        url_alternativa: "https://transparencianovo.ib.itaborai.rj.gov.br/"   # entrar pelo portal se o endereco direto falhar
+        # 10/10/2026: endereco direto deu Internal Server Error uma vez (~16:35) e abriu normalmente as 16:43, sem passar pelo Supernova antes: falha temporaria, tratar com novas tentativas
+        observacao: "Portal > 01-Receitas, Despesas e Ordem Cronológica > Despesas (mesma aba). Escolher o mes e Pesquisar, sem captcha. JSF: precisa de navegador. Colunas largas (Vr. Empenhado, Vr. Liquidado, Vr. Pago). Normalizar codificacao ('Preg?o')"
+      "4.6":
+        metodo: navegador
+        url: "https://itaborai.supernova.com.br:8443/contaspublicas/despesa.xhtml?exercicio={ano}"   # mesma pagina do 4.1
+        observacao: "Cabecalho do Supernova: 'Dados atualizados até: 09/10/2026' (visto em 10/10/2026); conferir com a data maxima da coluna Data, percorrendo a paginacao (ordem crescente)"
+      "12.1":
+        metodo: navegador
+        url: "https://transparencianovo.ib.itaborai.rj.gov.br/"
+        observacao: "Home > 15 - Relatórios Fiscais LRF > submenu RGF (abre ao clicar). Cards com periodo no titulo; republicacao = mesma competencia; lista paginada"
+      "15.4":
+        metodo: navegador
+        url: "https://transparencianovo.ib.itaborai.rj.gov.br/"
+        observacao: "Home > Prazos de respostas do SIC > Ver mais detalhes (modal) > baixar ANEXO 1 (PDF com texto, em tabelas)"
+      "16.2":
+        metodo: navegador
+        url: "https://transparencianovo.ib.itaborai.rj.gov.br/"
+        observacao: "Barra 'Acessibilidade' no topo, botao de contraste"
+
+  - id: cachoeiras_de_macacu
+    nome: "Prefeitura Municipal de Cachoeiras de Macacu"
+    municipio: "Cachoeiras de Macacu"
+    tipo: prefeitura
+    fornecedor: "Betha Sistemas"
+    site_oficial: "https://www.prefeituracachoeiras.com/"      # dominio .com, nao .gov.br
+    portal: "https://transparencia.betha.cloud/#/VZIcwd3tEQSz63QIK2HkQw=="
+    codigo_entidade_betha: "VZIcwd3tEQSz63QIK2HkQw=="
+    historico_urls: []
+    dominios_permitidos:
+      - "www.prefeituracachoeiras.com"
+      - "transparencia.betha.cloud"
+    api: null
+    criterios:
+      "1.2":
+        metodo: navegador
+        url: "https://www.prefeituracachoeiras.com/"
+        observacao: "Menu 'TRANSPARÊNCIA' visivel no topo, portal a 1 clique"
+      "4.1":
+        metodo: navegador
+        url: "https://transparencia.betha.cloud/#/VZIcwd3tEQSz63QIK2HkQw==/consulta/31180"
+        observacao: "Execução Detalhada de Despesas, sem captcha. Nao confundir com 'Execução Detalhada de Despesas Multas de Trânsito'. Colunas largas. Ordem decrescente"
+      "4.6":
+        metodo: navegador
+        url: "https://transparencia.betha.cloud/#/VZIcwd3tEQSz63QIK2HkQw==/consulta/31180"
+        observacao: "'Última atualização dos dados em' no topo; conferir com a data maxima"
+      "12.1":
+        metodo: navegador
+        url: "https://transparencia.betha.cloud/#/VZIcwd3tEQSz63QIK2HkQw==/consulta/195139"
+        observacao: "LRF - RGF. Periodo vem do titulo (coluna Relatório), nao da coluna Ano. Ordenar por Data/Hora Publicação. Mais recente: 3º quadrimestre de 2025 (Parcial no gabarito)"
+      "15.4":
+        metodo: navegador
+        url: "https://transparencia.betha.cloud/#/VZIcwd3tEQSz63QIK2HkQw==/acesso-informacao"
+        observacao: "Secao 'Sobre a LAI': prazos sim, autoridade nao (Parcial no gabarito). Texto possivelmente padrao da Betha. Formulario de pedido com reCAPTCHA: so ler, nunca enviar"
+      "16.2":
+        metodo: navegador
+        url: "https://transparencia.betha.cloud/#/VZIcwd3tEQSz63QIK2HkQw=="
+        observacao: "Barra 'Acessibilidade' no topo, icone de contraste"
+
+  - id: rio_de_janeiro
+    nome: "Prefeitura da Cidade do Rio de Janeiro"
+    municipio: "Rio de Janeiro"
+    tipo: prefeitura
+    fornecedor: "Proprio (sem credito de fornecedor)"
+    site_oficial: "https://prefeitura.rio/"
+    portal: "https://transparencia.prefeitura.rio/"
+    historico_urls: []
+    dominios_permitidos:
+      - "prefeitura.rio"
+      - "transparencia.prefeitura.rio"
+      - "rio.rj.gov.br"
+      - "contasrio.rio.rj.gov.br"
+      - "controladoria.prefeitura.rio"
+    api: null
+    criterios:
+      "1.2":
+        metodo: navegador
+        url: "https://prefeitura.rio/"
+        observacao: "Icone 'Transparência Rio' na grade 'O que eu preciso?', 1 clique; tambem no rodape. Verificar com janela 1366x768 se aparece sem rolar (possivel desempate com Caxias)"
+      "4.1":
+        metodo: navegador
+        url:
+          - "https://transparencia.prefeitura.rio/"
+          - "https://rio.rj.gov.br/web/contasrio"
+          - "https://contasrio.rio.rj.gov.br/ContasRio/#!Despesas/Empenhos"
+        observacao: "Cadeia de 3 sistemas, cada salto em nova aba. Novo Contas Rio vale a partir de 2024 (antes: portal antigo). Filtrar o mes atual; tela mostra ate 1.000 registros: preferir o botao de download. Ignorar linha 'Total'. A pagina 'Gráficos' so tem totais e nao serve para o 4.1"
+      "4.6":
+        metodo: navegador
+        url: "https://contasrio.rio.rj.gov.br/ContasRio/#!Despesas/Gráficos"
+        observacao: "Rodape 'Data de atualização dos dados'"
+      "12.1":
+        metodo: pagina
+        url: "https://controladoria.prefeitura.rio/lrf-quadrimestrais-ano-{ano}/"
+        observacao: "Listagem em https://controladoria.prefeitura.rio/quadros-da-lrf/ (bloco RGF, abaixo do RREO; so o numero do ano e clicavel). Periodo so conta como publicado se tiver link (3º quadrimestre aparece sem link)"
+      "15.4":
+        metodo: pagina
+        url:
+          - "https://transparencia.prefeitura.rio/acesso-a-informacao/pedido-de-informacao/"
+          - "https://transparencia.prefeitura.rio/acesso-a-informacao/recursos/"
+        observacao: "Juntar as duas paginas antes do LLM; remover paragrafos repetidos"
+      "16.2":
+        metodo: navegador
+        url: "https://transparencia.prefeitura.rio/"
+        observacao: "Opcao 'Alto Contraste' no painel 'Ferramentas de Acessibilidade' (icone de cadeira de rodas, lateral direita): procurar no HTML completo"
