@@ -27,7 +27,8 @@ def abrir_pagina(pagina, url, tentativas, espera_inicial_s=5, espera_js_ms=3000)
         tipo, mensagem, resposta = None, None, None
         try:
             resposta = pagina.goto(url, wait_until="load", timeout=60000)
-            pagina.wait_for_timeout(espera_js_ms)  # tempo para o JavaScript montar a pagina
+            pagina.wait_for_timeout(espera_js_ms)  # tempo minimo para o JavaScript montar a pagina
+            esperar_estabilizar(pagina)              # e mais, ate 30 s, se a tela ainda estiver mudando
             status = resposta.status if resposta else None
             texto = pagina.inner_text("body")[:20000] if pagina.query_selector("body") else ""
             if status is not None and status >= 400:
@@ -103,15 +104,63 @@ JS_TEXTOS_VISIVEIS = """sel => Array.from(document.querySelectorAll(sel)).filter
   .filter(t => t.trim().length > 0)"""
 
 
-def texto_da_pagina(pagina):
-    """Texto visivel de todas as molduras, para saber se um clique mudou alguma coisa."""
+def textos_das_molduras(pagina):
+    """Texto visivel de todas as molduras (pagina principal + iframes), junto."""
     partes = []
     for frame in pagina.frames:
         try:
             partes.append(frame.inner_text("body", timeout=5000))
         except ErroPlaywright:
             pass
-    return hashlib.sha256("\n".join(partes).encode("utf-8")).hexdigest()
+    return "\n".join(partes)
+
+
+def texto_da_pagina(pagina):
+    """Hash do texto visivel, para saber se um clique mudou alguma coisa."""
+    return hashlib.sha256(textos_das_molduras(pagina).encode("utf-8")).hexdigest()
+
+
+JS_CARREGANDO = """() => [...document.querySelectorAll(
+    '[class*="spinner" i], [class*="loading" i], [class*="loader" i], [aria-busy="true"]')].some(e => {
+    const r = e.getBoundingClientRect(), st = getComputedStyle(e);
+    return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0';
+})"""
+
+
+def carregando(pagina):
+    """True se ha um indicador de carregamento visivel (spinner, loading, loader, aria-busy) em alguma moldura."""
+    for frame in pagina.frames:
+        try:
+            if frame.evaluate(JS_CARREGANDO):
+                return True
+        except ErroPlaywright:
+            pass
+    return False
+
+
+def esperar_estabilizar(pagina, minimo_caracteres=200, maximo_s=30, maximo_carregando_s=90, intervalo_ms=1500):
+    """Espera a tela montar: texto com pelo menos `minimo_caracteres`, igual em duas leituras seguidas
+    e sem indicador de carregamento visivel.
+
+    Por que: espera fixa nao serve para sistemas inteiros em JavaScript. Na execucao 8 o Contas Rio ainda
+    mostrava so o icone de carregando depois de 6 s; na execucao 9 a tela montou, mas a tabela de empenhos
+    ficou com um spinner (div.show-spinner) enquanto o texto ao redor ja estava parado, e a pagina foi salva
+    sem a tabela. Por isso o texto parado nao basta: tambem nao pode haver spinner visivel.
+    Limites: 30 s se nada indica carregamento; ate 90 s enquanto houver spinner visivel (consulta pesada,
+    como os 223 mil empenhos do Rio). Devolve True se estabilizou, False se estourou o tempo
+    (a pagina e salva assim mesmo, e a regra decide com o que tiver).
+    """
+    anterior, inicio = None, time.monotonic()
+    while True:
+        texto = textos_das_molduras(pagina)
+        ocupado = carregando(pagina)
+        if len(texto.strip()) >= minimo_caracteres and texto == anterior and not ocupado:
+            return True
+        decorrido = time.monotonic() - inicio
+        if decorrido > maximo_carregando_s or (decorrido > maximo_s and not ocupado):
+            return False
+        anterior = texto
+        pagina.wait_for_timeout(intervalo_ms)
 
 
 def textos_visiveis(pagina, seletor):

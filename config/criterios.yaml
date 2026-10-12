@@ -1,0 +1,46 @@
+# Criterios do checklist usados no prototipo GATE/MPRJ (6 de 66, um por tipo de verificacao).
+# Texto do proprio checklist fornecido no case. O peso de cada criterio sera definido na metodologia do score.
+versao_checklist: "v1-2026-10"
+criterios:
+  - codigo: "1.2"
+    categoria: "INFORMAÇÕES PRIORITÁRIAS"
+    descricao: "O acesso ao portal transparência está visível na capa do site?"
+    fundamentacao: "Art. 8º, caput da LAI"
+    matriz: comum
+    tipo_verificacao: navegacao
+    aplica_a: [prefeitura, camara]
+  - codigo: "4.1"
+    categoria: "DESPESA"
+    descricao: "Número e o valor de empenho, liquidação e pagamento"
+    fundamentacao: "Arts. 7º, VI e 8º, §1º, inciso III, da LAI"
+    matriz: comum
+    tipo_verificacao: dados_estruturados
+    aplica_a: [prefeitura, camara]
+  - codigo: "4.6"
+    categoria: "DESPESA"
+    descricao: "Existência de informações atualizadas em relação aos critérios da despesa"
+    fundamentacao: "Art. 8º, §3º, inciso VI, da LAI"
+    matriz: comum
+    tipo_verificacao: atualizacao
+    aplica_a: [prefeitura, camara]
+  - codigo: "12.1"
+    categoria: "PLANEJAMENTO E PRESTAÇÃO DE CONTAS"
+    descricao: "Publica o Relatório de Gestão Fiscal (RGF)"
+    fundamentacao: "Art. 48º, \"caput\", da LC nº 101/00"
+    matriz: comum
+    tipo_verificacao: documento
+    aplica_a: [prefeitura, camara]
+  - codigo: "15.4"
+    categoria: "SERVIÇO DE INFORMAÇÕES AO CIDADÃO e-SIC (ELETRÔNICO)"
+    descricao: "Divulga, na seção relativa ao e-SIC, os prazos de resposta ao cidadão, incluindo o recursal, e as autoridades competentes para o exame dos pedidos, além do procedimento referente à realização do pedido e de eventual recurso?"
+    fundamentacao: "Arts. 7º, 15º e 16º, da LAI"
+    matriz: comum
+    tipo_verificacao: semantica
+    aplica_a: [prefeitura, camara]
+  - codigo: "16.2"
+    categoria: "ACESSIBILIDADE"
+    descricao: "Opção de alto contraste"
+    fundamentacao: "Art. 8º, §3º, inciso VIII, da LAI"
+    matriz: comum
+    tipo_verificacao: existencia
+    aplica_a: [prefeitura, camara]

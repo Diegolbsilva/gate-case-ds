@@ -31,6 +31,26 @@ def sincronizar_entidades(con, entidades):
     con.commit()
 
 
+def sincronizar_criterios(con, cfg_criterios):
+    """Garante que os criterios do criterios.yaml existem no banco. Devolve {codigo: id}."""
+    versao = cfg_criterios["versao_checklist"]
+    for c in cfg_criterios["criterios"]:
+        con.execute(
+            "INSERT OR IGNORE INTO criterios (codigo, versao_checklist, categoria, descricao, fundamentacao, matriz, "
+            "tipo_verificacao) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (c["codigo"], versao, c["categoria"], c["descricao"], c.get("fundamentacao"), c["matriz"],
+             c["tipo_verificacao"]),
+        )
+        criterio_id = con.execute("SELECT id FROM criterios WHERE codigo = ? AND versao_checklist = ?",
+                                  (c["codigo"], versao)).fetchone()[0]
+        for tipo in c.get("aplica_a", []):
+            con.execute("INSERT OR IGNORE INTO criterio_aplicabilidade (criterio_id, tipo_entidade) VALUES (?, ?)",
+                        (criterio_id, tipo))
+    con.commit()
+    return {codigo: id_ for id_, codigo in con.execute(
+        "SELECT id, codigo FROM criterios WHERE versao_checklist = ?", (versao,))}
+
+
 def iniciar_execucao(con, origem, versao_checklist, versao_codigo, observacao=None):
     cur = con.execute(
         "INSERT INTO execucoes (iniciada_em, origem, versao_checklist, versao_codigo, status, observacao) "

@@ -40,7 +40,7 @@ entidades:
       "1.2":
         metodo: navegador
         url: "https://japeri.rj.gov.br/"
-        observacao: "Menu Transparência > Transparência: 2 cliques ate o portal (Parcial no gabarito)"
+        observacao: "Card 'PORTAL DE TRANSPARÊNCIA' abaixo do carrossel: 1 clique, precisa rolar (Atende no gabarito, corrigido em 12/10/2026). O menu Transparência e o caminho longo: /links/ > Transparência (2 cliques)"
       "4.1":
         metodo: api
         url: "/execucao/despesas_detalhadas/despesas_detalhadas"
@@ -141,11 +141,11 @@ entidades:
         observacao: "Cabecalho do Supernova: 'Dados atualizados até: 09/10/2026' (visto em 10/10/2026); conferir com a data maxima da coluna Data, percorrendo a paginacao (ordem crescente)"
       "12.1":
         metodo: navegador
-        url: "https://transparencianovo.ib.itaborai.rj.gov.br/"
-        observacao: "Home > 15 - Relatórios Fiscais LRF > submenu RGF (abre ao clicar). Cards com periodo no titulo; republicacao = mesma competencia; lista paginada"
+        url: "https://transparencianovo.ib.itaborai.rj.gov.br/15-relatorios-fiscais-da-lrf/rgf/"   # endereco direto achado pela descoberta (execucao 7); antes: capa do portal
+        observacao: "Home > 15 - Relatórios Fiscais LRF > submenu RGF (abre ao clicar). Pagina com 'Atualizado em', filtro de ano e botao BUSCAR. Cards com periodo no titulo; republicacao = mesma competencia; lista paginada"
       "15.4":
         metodo: navegador
-        url: "https://transparencianovo.ib.itaborai.rj.gov.br/"
+        url: "https://transparencianovo.ib.itaborai.rj.gov.br/outros/prazos-de-respostas-do-sic/"   # endereco direto achado pela descoberta (execucao 7); antes: capa do portal
         observacao: "Home > Prazos de respostas do SIC > Ver mais detalhes (modal) > baixar ANEXO 1 (PDF com texto, em tabelas)"
       "16.2":
         metodo: navegador
@@ -210,14 +210,13 @@ entidades:
       "1.2":
         metodo: navegador
         url: "https://prefeitura.rio/"
-        observacao: "Icone 'Transparência Rio' na grade 'O que eu preciso?', 1 clique; tambem no rodape. Verificar com janela 1366x768 se aparece sem rolar (possivel desempate com Caxias)"
+        observacao: "Icone 'Transparência Rio' na grade 'O que eu preciso?', 1 clique; tambem no rodape. Com janela 1366x768 precisa rolar (execucao 3, 12/10/2026): nota 0,9"
       "4.1":
         metodo: navegador
         url:
           - "https://transparencia.prefeitura.rio/"
-          - "https://rio.rj.gov.br/web/contasrio"
           - "https://contasrio.rio.rj.gov.br/ContasRio/#!Despesas/Empenhos"
-        observacao: "Cadeia de 3 sistemas, cada salto em nova aba. Novo Contas Rio vale a partir de 2024 (antes: portal antigo). Filtrar o mes atual; tela mostra ate 1.000 registros: preferir o botao de download. Ignorar linha 'Total'. A pagina 'Gráficos' so tem totais e nao serve para o 4.1"
+        observacao: "Cadeia de 3 sistemas, cada salto em nova aba (portal > rio.rj.gov.br/web/contasrio > contasrio). O salto do meio saiu da lista em 12/10/2026: so passagem, e deu timeout de 60 s na execucao 8. Contas Rio (Vaadin) ainda carregando depois de 6 s na execucao 8: depende da espera ate estabilizar. Novo Contas Rio vale a partir de 2024 (antes: portal antigo). Filtrar o mes atual; tela mostra ate 1.000 registros: preferir o botao de download. Ignorar linha 'Total'. A pagina 'Gráficos' so tem totais e nao serve para o 4.1"
       "4.6":
         metodo: navegador
         url: "https://contasrio.rio.rj.gov.br/ContasRio/#!Despesas/Gráficos"

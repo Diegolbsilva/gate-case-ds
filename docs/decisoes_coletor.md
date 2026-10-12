@@ -75,7 +75,7 @@ Cada alvo tem uma lista de termos com peso. A nota de um texto é a soma dos pes
 - Nota zero ou negativa: não clica e registra "não achado".
 - **Só clica no que uma pessoa conseguiria clicar:** elemento visível na tela, ou elemento com endereço (aí o coletor abre o endereço, que é equivalente). Elemento escondido e sem endereço fica de fora. **Erro real que motivou a regra:** a Betha tem um menu lateral fechado com "Execução Detalhada de Despesas". O robô forçava o clique nesse item escondido, nada acontecia, e o registro dizia sucesso. Os prints de antes e depois eram idênticos.
 - **Clique sem efeito é falha:** se o endereço e o texto da tela são os mesmos antes e depois do clique, o coletor registra "sem_efeito" e não sucesso.
-- **Botão genérico ganha contexto:** "ACESSAR", "Saiba mais" e "Clique aqui" não dizem para onde vão. O rótulo passa a incluir os títulos do card ao redor (ex.: "ACESSAR (Despesas públicas Despesas realizadas pelo município.)"). É genérico: vale para qualquer portal com cards, não só para a Betha.
+- **Botão genérico ganha contexto:** "ACESSAR", "Saiba mais" e "Clique aqui" não dizem para onde vão. O rótulo passa a incluir os títulos do card ao redor (ex.: "ACESSAR (Despesas públicas Despesas realizadas pelo município.)"). É genérico: vale para qualquer portal com cards, não só para a Betha. Resultado (execução 6): em Cachoeiras, despesa e RGF passaram a ser achados em 2 cliques (card > consulta), chegando na mesma consulta do gabarito manual.
 - **Até 2 cliques.** O segundo clique só acontece se as duas condições valerem (decidido em 12/10/2026, depois da primeira execução real):
   - o texto tem **nota 6 ou mais**, para não clicar em algo pouco relacionado;
   - o texto foi **revelado pelo primeiro clique**: não estava visível antes dele (um submenu que abriu, uma página nova ou um modal). Um item que já estava na tela antes é **irmão no menu**, não um passo mais fundo. Texto já clicado nunca é clicado de novo, comparando pelo texto e pelo rótulo (texto + title + aria-label).
@@ -152,6 +152,31 @@ A detecção é gravada com a **evidência** (ex.: "domínio do portal: japeri.g
 | Betha | Ainda sem adaptador: a descoberta genérica resolve | Pendente: confirmar se o número das consultas é igual em todos os municípios Betha |
 
 **Como defender:** "Cada adaptador é escrito uma vez e serve para todos os municípios daquele fornecedor. A flag no cadastro existe só como exceção, para forçar um caminho quando a detecção errar."
+
+## 5.3 Páginas do cadastro (`cadastro.py` e `config/criterios.yaml`)
+
+**O que faz:** para cada prefeitura, abre as URLs anotadas por critério no `entidades.yaml` e salva HTML e print, ligados ao critério no banco (`artefatos.criterio_id`).
+
+**Por que existe:** é o passo 3 da avaliação em cascata (4.5). Quando a página da descoberta não tem a evidência, a regra procura aqui antes de concluir. Também cobre o que a descoberta não procura (16.2, segunda página do 15.4) e serve de gabarito para medir a descoberta.
+
+**Regras:**
+
+| Situação no cadastro | O que o programa faz | Por quê |
+|---|---|---|
+| Método `api` | Não coleta aqui | O `apis.py` já coleta pelo adaptador do fornecedor |
+| URL | Abre, fecha pop-ups, salva HTML e print | Evidência guardada com hash, como as demais |
+| Caminho descrito em texto (ex.: Caxias 15.4, "Portal > Pedido de Informação > ...") | Não coleta e avisa | Não há endereço: a página só existe navegando (Webrun não muda a URL). A evidência vem da descoberta |
+| Mesma URL em vários critérios (ex.: capa do portal no 16.2) | Abre uma vez e liga o arquivo a cada critério | Menos acessos ao portal público, mesmo arquivo e mesmo hash |
+| `{ano}` na URL | Vira o ano corrente | Exercício avaliado |
+| Página fora do ar | 3 tentativas, depois Indisponível registrado | Mesma regra das demais coletas |
+
+- **Espera de 6 s para o JavaScript** (o padrão é 3 s): Contas Rio e Betha são sistemas inteiros em JavaScript e demoram mais para montar a tela.
+- **Pesquisa (decidido em 12/10/2026, depois da execução 8):** em consulta de dados (4.1, 4.6 e 12.1), se houver um botão visível "Pesquisar", "Consultar" ou "Buscar", o coletor clica uma vez e salva também o resultado (`_pesquisa`). Antes, se houver um seletor de mês vazio, escolhe o mês corrente. **Nunca clica** se a página tiver reCAPTCHA, nunca em página do e-SIC (15.4, para não enviar formulário) e não faz download. **Motivo:** em Japeri (RGF, GeoSiap) e Itaboraí (despesas, Supernova) a tabela só aparece depois do Pesquisar. Em Japeri a entidade já vem selecionada como Prefeitura (valor 10); em Itaboraí o mês é obrigatório. A regra é genérica (texto do botão e seletor com os 12 meses), não depende do fornecedor.
+- **Espera até a tela estabilizar** (vale para todas as coletas, em `abrir_pagina`): depois da espera mínima, o coletor relê o texto da tela a cada 1,5 s e só segue quando ele tem pelo menos 200 caracteres e não mudou entre duas leituras, até 30 s. **Motivo:** na execução 8 o Contas Rio (Vaadin) ainda mostrava só o ícone de carregando depois de 6 s. Espera fixa maior atrasaria todas as páginas; esta só espera o necessário.
+  - **Ajuste depois da execução 9:** texto parado não basta. No Contas Rio a tela montou, mas a tabela de empenhos ficou com um ícone de carregando enquanto o texto ao redor já estava parado, e a página foi salva sem a tabela. Na tela do Diego, a tabela aparece sozinha depois de algum tempo (223.030 registros, os 12 meses de 2026). Agora o coletor também espera **não haver indicador de carregamento visível** (elemento com classe "spinner", "loading" ou "loader", ou `aria-busy`). Limites: 30 s se nada indica carregamento; até 90 s enquanto houver um carregando visível. Testado em site simulado com tabela que aparece depois de 20 s de spinner: salva com a tabela.
+  - **Risco conhecido:** um site com um elemento "loading" visível permanente faz cada página esperar 90 s. Fica registrado no tempo da execução, sem errar o resultado.
+- **Limite:** se a mesma URL serve a dois critérios e o primeiro não é de consulta, a pesquisa não acontece no segundo. Não ocorre no cadastro atual.
+- **`config/criterios.yaml`:** os 6 critérios com o texto do checklist (código, categoria, descrição, fundamentação, tipo de verificação, a quem se aplica). O programa grava no banco na primeira execução. O peso de cada critério fica para a metodologia do score.
 
 ## 6. Banco (`banco.py` e `db/schema.sql`)
 
