@@ -64,6 +64,24 @@ CREATE TABLE execucoes (
     observacao        TEXT
 );
 
+-- Tudo o que o coletor baixou: HTML, print, JSON de API, PDF.
+-- Separa coletar de avaliar: as regras podem ser refeitas sobre o que ja foi baixado (secao 8).
+CREATE TABLE artefatos (
+    id             INTEGER PRIMARY KEY,
+    execucao_id    INTEGER NOT NULL REFERENCES execucoes(id),
+    entidade_id    TEXT NOT NULL REFERENCES entidades(id),
+    criterio_id    INTEGER REFERENCES criterios(id),       -- NULL para paginas gerais (ex.: capa)
+    papel          TEXT NOT NULL,                          -- ex.: 'capa_site', 'capa_portal', 'pagina_criterio', 'api'
+    url            TEXT NOT NULL,                          -- endereco pedido
+    url_final      TEXT,                                   -- endereco depois de redirecionamentos
+    tipo           TEXT NOT NULL CHECK (tipo IN ('html', 'png', 'json', 'pdf', 'csv', 'outro')),
+    caminho        TEXT NOT NULL,                          -- arquivo salvo em disco
+    hash_sha256    TEXT NOT NULL,                          -- detecta mudanca entre execucoes
+    tamanho_bytes  INTEGER NOT NULL,
+    status_http    INTEGER,
+    coletado_em    TEXT NOT NULL
+);
+
 -- Resultado de UM criterio, para UMA entidade, em UMA execucao.
 CREATE TABLE avaliacoes (
     id             INTEGER PRIMARY KEY,
@@ -86,6 +104,7 @@ CREATE TABLE avaliacoes (
 CREATE TABLE evidencias (
     id               INTEGER PRIMARY KEY,
     avaliacao_id     INTEGER NOT NULL REFERENCES avaliacoes(id),
+    artefato_id      INTEGER REFERENCES artefatos(id),     -- arquivo de onde a evidencia saiu
     tipo             TEXT NOT NULL CHECK (tipo IN
                        ('trecho', 'tabela', 'arquivo', 'screenshot', 'resposta_api', 'metadado')),
     url              TEXT,
@@ -116,7 +135,7 @@ CREATE TABLE ocorrencias (
     criterio_id  INTEGER REFERENCES criterios(id),
     url          TEXT,
     tipo         TEXT NOT NULL CHECK (tipo IN
-                   ('erro_http', 'erro_servidor', 'timeout', 'captcha', 'layout_inesperado', 'outro')),
+                   ('erro_http', 'erro_servidor', 'bloqueio', 'timeout', 'captcha', 'layout_inesperado', 'outro')),
     mensagem     TEXT,
     tentativa    INTEGER,
     ocorrido_em  TEXT NOT NULL
@@ -124,6 +143,7 @@ CREATE TABLE ocorrencias (
 
 CREATE INDEX idx_avaliacoes_entidade_criterio ON avaliacoes (entidade_id, criterio_id);
 CREATE INDEX idx_evidencias_avaliacao ON evidencias (avaliacao_id);
+CREATE INDEX idx_artefatos_execucao_entidade ON artefatos (execucao_id, entidade_id);
 
 -- Ultima avaliacao de cada criterio em cada entidade (o que o dashboard mostra como "situacao atual").
 CREATE VIEW v_situacao_atual AS
