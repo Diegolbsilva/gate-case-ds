@@ -262,6 +262,21 @@ Teste com Playwright 1.63 na consulta de despesas da Betha (Cachoeiras de Macacu
 - Descartado: disfarçar o navegador como Chrome comum (não é postura adequada para um órgão de controle).
 - Na documentação: em produção, o caminho para bloqueios é institucional (MPRJ solicita ao fornecedor liberação ou acesso aos dados abertos), não contornar a proteção.
 
+### Caminho de coleta em cascata (decidido em 12/10/2026)
+
+Objetivo: escalar sem código por prefeitura. O código especial é por FORNECEDOR (poucos, cada um cobre muitos municípios).
+
+1. Detectar o fornecedor automaticamente pela URL e pelo HTML da capa do portal (domínio, rodapé, assinaturas), registrando a evidência.
+2. Fornecedor com adaptador (GeoSiap: API; Modernização: API; Betha: consultas por endereço direto): usar o adaptador.
+3. Sem adaptador ou adaptador falhou: descoberta genérica (textos clicáveis + dicionário de termos do checklist, até 2 cliques).
+4. Descoberta falhou: cadastro manual como reserva.
+5. Nada funcionou: Inconclusivo.
+
+- Cadastro por prefeitura: só site oficial e tipo de entidade; flag de fornecedor no cadastro apenas como exceção manual (forçar caminho quando a detecção errar).
+- Cada avaliação registra por qual caminho foi resolvida (adaptador, descoberta, cadastro): métrica de escala para a documentação.
+- Descoberta genérica, primeiro teste nas 10 capas reais (12/10/2026, HTML estático): primeiro clique certo em 19 de 20 alvos. Falha: Rio, despesas ("CONTAS RIO" não contém termo de despesa); resolvida pela reserva do cadastro, sem acrescentar termo específico do município ao dicionário.
+- Achado da descoberta: a capa do site de Japeri tem um quadro "PORTAL DE TRANSPARÊNCIA" com link direto para o portal (gabarito manual registrou 1.2 Parcial por 2 cliques no menu): conferir visibilidade e, se visível, corrigir o gabarito para Atende.
+
 ### Unidade avaliada (decidida em 10/10/2026)
 
 Unidade avaliada: o Poder Executivo municipal (Prefeitura, fundos e autarquias), sem a Câmara, para usar a mesma régua em todas as prefeituras.

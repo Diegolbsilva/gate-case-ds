@@ -12,14 +12,12 @@ def agora():
 
 
 def conectar(caminho_banco):
-    """Abre o banco; se o arquivo nao existe, cria as tabelas a partir de db/schema.sql."""
+    """Abre o banco e cria as tabelas que ainda nao existem (db/schema.sql usa CREATE ... IF NOT EXISTS)."""
     caminho_banco = Path(caminho_banco)
-    novo = not caminho_banco.exists()
     caminho_banco.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(caminho_banco)
     con.execute("PRAGMA foreign_keys = ON")
-    if novo:
-        con.executescript(ESQUEMA.read_text(encoding="utf-8"))
+    con.executescript(ESQUEMA.read_text(encoding="utf-8"))
     return con
 
 
@@ -67,5 +65,17 @@ def registrar_ocorrencia(con, execucao_id, entidade_id, ocorrencia, criterio_id=
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (execucao_id, entidade_id, criterio_id, ocorrencia["url"], ocorrencia["tipo"], ocorrencia["mensagem"],
          ocorrencia["tentativa"], ocorrencia["ocorrido_em"]),
+    )
+    con.commit()
+
+
+def registrar_descoberta(con, execucao_id, entidade_id, d):
+    """d: dicionario com as colunas da tabela descobertas (sem id, execucao_id e entidade_id)."""
+    colunas = ["alvo", "passo", "texto_clicado", "nota", "url_origem", "url_destino", "modo",
+               "visivel_sem_interacao", "precisou_rolar", "origem_inicio", "sucesso", "artefato_id", "observacao"]
+    con.execute(
+        f"INSERT INTO descobertas (execucao_id, entidade_id, {', '.join(colunas)}, ocorrido_em) "
+        f"VALUES (?, ?, {', '.join('?' * len(colunas))}, ?)",
+        [execucao_id, entidade_id] + [d.get(c) for c in colunas] + [agora()],
     )
     con.commit()
