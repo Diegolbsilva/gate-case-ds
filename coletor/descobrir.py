@@ -1,8 +1,10 @@
 """Descoberta automatica, partindo SO do site oficial de cada entidade.
 
 Passo 1: na capa do site, acha o link do portal da transparencia (e mede se esta visivel e se precisa rolar: 1.2).
-Passo 2: na capa do portal, para cada alvo (despesa, rgf, esic), clica no melhor texto e, se a pagina
-seguinte tiver um texto ainda melhor, clica de novo (ate 2 cliques).
+Passo 2: na capa do portal, para cada alvo (despesa, rgf, esic), clica no melhor texto. Segundo clique
+(no maximo 2) so em texto que o primeiro clique REVELOU: o que ja estava visivel antes e irmao no menu,
+nao um passo mais fundo (erro visto em Cachoeiras: foi de "Execucao Detalhada de Despesas" para
+"... - Educacao"). Texto ja clicado tambem nunca e clicado de novo.
 Cada pagina alcancada e salva (HTML + print) e o caminho fica na tabela 'descobertas'.
 Se a descoberta do portal falhar, usa o portal do cadastro e registra origem 'cadastro'.
 
@@ -17,8 +19,8 @@ import yaml
 from playwright.sync_api import sync_playwright
 
 from coletor import banco
-from coletor.descoberta import extrair_candidatos, melhores
-from coletor.navegador import abrir_pagina, examinar_elemento, fechar_popups, html_dos_frames, salvar_pagina, seguir
+from coletor.descoberta import SELETOR_CLICAVEL, extrair_candidatos, generico, melhores
+from coletor.navegador import abrir_pagina, examinar_elemento, fechar_popups, html_dos_frames, salvar_pagina, seguir, textos_visiveis
 
 RAIZ = Path(__file__).resolve().parent.parent
 ALVOS = ["despesa", "rgf", "esic"]
@@ -76,7 +78,8 @@ with sync_playwright() as p:
         escolhido = None
         if resposta is not None:
             fechar_popups(capa)
-            escolhidos = melhores(candidatos_da_pagina(capa), "portal", quantos=1)
+            escolhidos = melhores(candidatos_da_pagina(capa), "portal", quantos=1,
+                                  visiveis=textos_visiveis(capa, SELETOR_CLICAVEL))
             escolhido = escolhidos[0] if escolhidos else None
         if escolhido is None:
             banco.registrar_descoberta(con, execucao_id, eid, {
@@ -113,10 +116,13 @@ with sync_playwright() as p:
                     aberta.close()
                 continue
             fechar_popups(atual)
-            clicados = []
+            ignorar = []  # passo 2: textos ja clicados + textos visiveis antes do primeiro clique
             for passo in (1, 2):
-                escolhidos = melhores(candidatos_da_pagina(atual), alvo, quantos=1, ignorar=clicados)
+                visiveis = textos_visiveis(atual, SELETOR_CLICAVEL)
+                escolhidos = melhores(candidatos_da_pagina(atual), alvo, quantos=1, ignorar=ignorar, visiveis=visiveis)
                 if not escolhidos or (passo == 2 and escolhidos[0]["nota"] < NOTA_MINIMA_SEGUNDO_CLIQUE):
+                    if passo == 2:
+                        print(f"  {alvo:8} 2. nenhum texto novo revelado pelo 1o clique: fica no 1o")
                     if passo == 1:
                         banco.registrar_descoberta(con, execucao_id, eid, {
                             "alvo": alvo, "passo": 1, "url_origem": atual.url, "origem_inicio": origem_inicio,
@@ -126,20 +132,22 @@ with sync_playwright() as p:
                 escolhido = escolhidos[0]
                 exame = examinar_elemento(atual, escolhido)
                 url_origem = atual.url
+                if passo == 1:
+                    ignorar += visiveis
                 destino, modo, ocorrencias = seguir(contexto, atual, escolhido, coleta["tentativas"])
                 for o in ocorrencias:
                     banco.registrar_ocorrencia(con, execucao_id, eid, o)
                 artefato_id = registrar_pagina(destino, f"descoberta_{alvo}_{passo}", eid) if destino else None
                 banco.registrar_descoberta(con, execucao_id, eid, {
-                    "alvo": alvo, "passo": passo, "texto_clicado": escolhido["texto"], "nota": escolhido["nota"],
+                    "alvo": alvo, "passo": passo, "texto_clicado": escolhido["rotulo"] if generico(escolhido) else escolhido["texto"], "nota": escolhido["nota"],
                     "url_origem": url_origem, "url_destino": destino.url if destino else None, "modo": modo,
                     "visivel_sem_interacao": exame["visivel"], "precisou_rolar": exame["precisa_rolar"],
                     "origem_inicio": origem_inicio, "sucesso": int(destino is not None), "artefato_id": artefato_id})
-                print(f"  {alvo:8} {passo}. '{escolhido['texto'][:45]}' (nota {escolhido['nota']}, {modo}) -> "
-                      f"{destino.url if destino else 'FALHOU'}")
+                print(f"  {alvo:8} {passo}. '{(escolhido['rotulo'] if generico(escolhido) else escolhido['texto'])[:45]}' (nota {escolhido['nota']}, {modo}) -> "
+                      f"{destino.url if destino else 'FALHOU (' + str(modo) + ')'}")
                 if destino is None:
                     break
-                clicados.append(escolhido["texto"])
+                ignorar += [escolhido["rotulo"]] if generico(escolhido) else [escolhido["texto"], escolhido["rotulo"]]
                 atual = destino
             for aberta in list(contexto.pages):
                 aberta.close()

@@ -20,13 +20,13 @@ Critérios em uso: 1.2 (navegação), 4.1 (dados estruturados), 4.6 (atualizaç�
 
 | | 1.2 | 4.1 | 4.6 | 12.1 | 15.4 | 16.2 |
 |---|---|---|---|---|---|---|
-| Japeri | Parcial | Atende | Atende | Parcial | Não atende | Atende |
+| Japeri | Atende (corrigido em 12/10) | Atende | Atende | Parcial | Não atende | Atende |
 | Duque de Caxias | Atende | Atende | Atende | Atende | Atende | Atende |
 | Itaboraí | Parcial | Atende | Atende | Atende | Atende | Atende |
 | Cachoeiras de Macacu | Atende | Atende | Atende | Parcial | Parcial | Atende |
 | Rio de Janeiro | Atende | Atende | Atende | Atende | Atende | Atende |
 
-Gabarito completo: 24 Atende, 5 Parcial, 1 Não atende.
+Gabarito completo: 25 Atende, 4 Parcial, 1 Não atende (Japeri 1.2 corrigido de Parcial para Atende em 12/10/2026: a descoberta achou o atalho que a visita manual não viu).
 
 Data de referência das avaliações de 10/10/2026: sábado, último dia útil 09/10/2026; RGF mais recente esperado: 2º quadrimestre de 2026.
 
@@ -37,7 +37,7 @@ Data de referência das avaliações de 10/10/2026: sábado, último dia útil 0
 | Item | Resultado | Evidência | Caminho |
 |---|---|---|---|
 | 1.1 Possui portal | Atende | Portal GeoSiap acessível a partir do site oficial | Site > Transparência > Transparência |
-| 1.2 Acesso na capa | Parcial | Menu "Transparência" existe na capa, mas exige 2 cliques até o portal | Site > Transparência > Transparência |
+| 1.2 Acesso na capa | Atende (corrigido em 12/10/2026; antes Parcial) | Card "PORTAL DE TRANSPARÊNCIA" na capa, abaixo do carrossel: 1 clique até o portal, visível depois de rolar (nota 0,9 pela regra da rolagem). O menu "Transparência" do topo é o caminho longo: abre japeri.rj.gov.br/links/ (Legislação, Transparência, Diário Oficial) e só no 2º clique chega ao portal. A visita manual de 09/10 seguiu o menu; a descoberta automática achou o card (execução 3) e a conferência visual confirmou em 12/10 | Capa do site > card Portal de Transparência |
 | 1.3 Ferramenta de pesquisa | Atende | Caixa "Pesquise..." no topo do portal | Home do portal |
 | 4.1 Empenho, liquidação, pagamento | Atende | Tabela com colunas "Doc. Despesa" (nº do empenho), "Valor Empenhado", "Valor Liquidado", "Valor Pago" | Execução Orçamentária > Despesas Detalhadas > Pesquisar |
 | 4.3 Credor | Atende | Colunas "Credor" e "CNPJ/CPF" | Mesma tabela |
@@ -153,13 +153,14 @@ Outros itens vistos no menu Publicações: Parecer do Tribunal de Contas (12.5),
 |---|---|
 | Onde | Portal > API de Dados Abertos (Dados Abertos) > Documentação uso APIs (abre dentro do portal; a URL do navegador não muda, fica só transparencia.duquedecaxias.rj.gov.br). Na primeira tentativa (10/10 15:20) deu o mesmo erro "Network error IOException: Address already in use: connect"; abriu ao recarregar |
 | Endpoint único | https://transparencia.duquedecaxias.rj.gov.br/sincronia/apidados.rule?sys=LAI |
-| Parâmetros | JSON { "api": "<serviço>", "ano": <inteiro> } ("Consumo"); método HTTP não informado na tela, a testar |
+| Parâmetros | JSON { "api": "<serviço>", "ano": <inteiro> } ("Consumo"); método HTTP não informado na tela. Confirmado no coletor (execução 4, 12/10/2026): POST com corpo JSON, sem chave, cabeçalho ou sessão |
 | Catálogo | 60 serviços; cada um com documentação em JSON e PDF (https://transparencia.duquedecaxias.rj.gov.br/ver20230623/tmp/json_api/<serviço>.json/.pdf), exemplo de resposta, resultado de erro, metadados, dicionário (CREATE TABLE) e data de última alteração. Página "Data da Última Atualização: 24/09/2026" |
 | Autodescoberta | Serviço "consulta_api" devolve a lista de APIs com nome e parâmetros de entrada |
 | Chave de acesso | Nenhuma mencionada |
 | Limitação | Alguns serviços avisam "Esta API só retorna dados do ANO corrente" |
 | Serviços para o protótipo | 4.1 e 4.6: despesas_todas ("Consulta de Todas as Despesas Empenhadas, Liquidadas e Pagas"); alternativas despesas_empenhadas, despesas_liquidadas, despesas_pagas. 12.1: consulta_rgf_m2 ("Relatório de Gestão Fiscal - RGF - Modelo 2") |
 | Reuso | O exemplo de resposta do "busca_avancada" traz "transparencia.mesquita.rj.gov.br": a mesma API e documentação são usadas em outros clientes da Modernização; o adaptador de Caxias deve servir para eles |
+| Resultado no coletor (execução 4, 12/10/2026) | despesas_todas 2026: 44.092 itens; consulta_rgf_m2 2026: 10 itens. Contorna o reCAPTCHA da tela sem burlá-lo (dados abertos oficiais) |
 | Erros documentados | { "status": "erro", "retorno": "Não foi encontrado comando para busca. Entre em contato com suporte técnico da API." } e "Não existem registro para esse filtro" |
 
 ### Japeri (GeoSiap / Grupo Embras)
@@ -176,6 +177,7 @@ Outros itens vistos no menu Publicações: Parecer do Tribunal de Contas (12.5),
 | Resultado de /sis_entidade (testado em 10/10/2026 pelo "Try it out!") | 15 entidades no mesmo portal. Prefeitura: id_entidade "10", "PREFEITURA MUNICIPAL DE JAPERI", principal "1" (única com principal = 1). Câmara: id_entidade "1", "CAMARA MUNICIPAL DE JAPERI". Demais: 12 fundos municipais (Saúde id 3, Assistência Social id 4, Educação id 18, Cultura id 9 etc.) e PREVIJAPERI (id 2). Ids vêm como texto ("10"), embora a documentação diga inteiro |
 | Resultado de despesas_detalhadas (testado em 10/10/2026 pelo "Try it out!") | Com id_entidade = 10 e "ano" = 2026 não funcionou; funcionou com data_inicial = 2026-10-01 e data_final = 2026-10-09. 7 empenhos da Prefeitura no período (só os emitidos no período e só da entidade 10; fundos ficam em outras entidades), ordenados do mais recente para o mais antigo. Campos usados: nr_doc_despesa (ex.: "925"), doc_despesa ("Empenho 925/2026"), dt_doc_despesa (ISO, "2026-10-09"), vl_empenhado, vl_liquidado, vl_pago (texto em reais, "R$ 261,15"), credor, doc_pessoa, classificação orçamentária completa (unidade, função, subfunção, programa, ação, conta, fonte). Totais no fim: total_empenhado, total_liquidado, total_pago. Data máxima: 2026-10-09 (confirma 4.6) |
 | Cuidados no código | Valores vêm como texto com "R$", ponto de milhar e vírgula decimal: converter antes de somar. doc_pessoa traz CPF completo de pessoas físicas: mascarar na evidência. Usar sempre data_inicial e data_final (o parâmetro "ano" não respondeu) |
+| Resultado no coletor (execução 4, 12/10/2026) | 14 entidades consultadas (15 menos a Câmara, excluída pelo nome), todas responderam; 146 registros de 12/09 a 12/10/2026; data máxima 2026-10-09 (igual ao gabarito do 4.6). Sem paginação: a resposta da Prefeitura (id 10) trouxe a lista despesas_detalhadas com 55 registros e os totais (total_empenhado R$ 2.395.288,83, total_liquidado R$ 315.436,46, total_pago R$ 312.711,85), sem campo de página ou contagem total; conferido em 12/10/2026 |
 | Observações | Selo "INVALID" do validador Swagger no rodapé (especificação não passa na validação). Endereço segue o padrão <município>.geosiap.net.br: adaptador GeoSiap deve servir para outros clientes. Swagger tem botão "Try it out!" |
 
 ## 4. Regras de decisão
@@ -275,7 +277,27 @@ Objetivo: escalar sem código por prefeitura. O código especial é por FORNECED
 - Cadastro por prefeitura: só site oficial e tipo de entidade; flag de fornecedor no cadastro apenas como exceção manual (forçar caminho quando a detecção errar).
 - Cada avaliação registra por qual caminho foi resolvida (adaptador, descoberta, cadastro): métrica de escala para a documentação.
 - Descoberta genérica, primeiro teste nas 10 capas reais (12/10/2026, HTML estático): primeiro clique certo em 19 de 20 alvos. Falha: Rio, despesas ("CONTAS RIO" não contém termo de despesa); resolvida pela reserva do cadastro, sem acrescentar termo específico do município ao dicionário.
-- Achado da descoberta: a capa do site de Japeri tem um quadro "PORTAL DE TRANSPARÊNCIA" com link direto para o portal (gabarito manual registrou 1.2 Parcial por 2 cliques no menu): conferir visibilidade e, se visível, corrigir o gabarito para Atende.
+- Achado da descoberta: a capa do site de Japeri tem um quadro "PORTAL DE TRANSPARÊNCIA" com link direto para o portal (gabarito manual registrou 1.2 Parcial por 2 cliques no menu). Execução 3 confirmou: visível, precisa rolar, 1 clique. Pela regra (rolar não conta como clique) o gabarito passa a Atende (nota 0,9), após conferência visual.
+
+#### Primeira execução real da descoberta (execução 3, 12/10/2026, código be1f789)
+
+| Entidade | Portal (1.2 medido) | despesa | rgf | esic |
+|---|---|---|---|---|
+| Japeri | Achado, visível, rolar | Certo (Despesas Detalhadas) | Certo (publicações tipo 5) | 1º certo (Fala.BR); 2º clique entrou no formulário de novo pedido do Fala.BR (desnecessário) |
+| Caxias | Achado, visível, sem rolar | Certo em 2 cliques (Despesas - Todas) | Certo em 2 cliques (RGF) | Clicou 2 vezes no mesmo texto (erro) |
+| Itaboraí | Achado, NÃO visível (submenu) | 1º certo (Supernova); 2º clicou "Despesas Correntes" na própria consulta (inofensivo) | Certo em 2 cliques (card 15 > RGF) | Certo (Prazos de respostas do SIC) |
+| Cachoeiras | Achado, visível, sem rolar | 1º certo; 2º foi para o irmão "... - Educação" (erro) | 1º certo (LRF - RGF); 2º foi para outro item do menu (provável erro) | Certo (Acesso à informação) |
+| Rio | Achado, visível, rolar | Não achado (previsto) | Errado: "Plano de execuções orçamentária e de gestão fiscal"; o RGF fica em controladoria.prefeitura.rio | Certo em 2 cliques (Pedido de Informação) |
+
+- 1.2 medido bate com o gabarito em Caxias, Itaboraí, Cachoeiras e Rio (pendência do Rio resolvida: precisa rolar, nota 0,9). Japeri: ver achado acima.
+- Primeiro clique certo em 18 de 20 (falhas: Rio despesa, não achado; Rio rgf, página errada). Todos os erros do segundo clique são de dois tipos: repetir o mesmo texto (o filtro comparava o texto com o rótulo, que inclui title/aria-label) e clicar num irmão do menu que já estava visível antes do primeiro clique.
+- Execução 5 (12/10/2026, com a correção 1): Japeri despesa e rgf, Itaboraí esic e Cachoeiras esic pararam no 1º clique, como esperado. Caxias esic agora vai a "Ficou confuso sobre e-SIC? Clique aqui e saiba mais" (texto revelado; inofensivo pela regra 2). Cachoeiras despesa e rgf continuaram errados, e os prints mostraram por quê: os prints do portal, de despesa 1 e 2 e de rgf 1 e 2 são idênticos (mesmo hash). Os itens escolhidos estão no menu lateral escondido da Betha e são `<a>` sem endereço; o clique forçado não faz nada, e o coletor registrava sucesso mesmo assim.
+- Correções de 12/10/2026, depois da execução 5 (testadas em site simulado; falta rodar nos portais reais):
+  - Elemento escondido e sem endereço não pode ser escolhido. Escondido com endereço continua valendo, porque o coletor abre o endereço direto (Itaboraí: submenu do site).
+  - Clique sem efeito (mesmo endereço e mesmo texto na tela antes e depois) vira falha registrada ("sem_efeito"), e não sucesso.
+  - Botão genérico ("ACESSAR", "Saiba mais", "Clique aqui") usa como rótulo os títulos do card ao redor. Na Betha, "ACESSAR" do card "Despesas públicas" pontua 6 para despesa, e o do card "Relatórios: Relatórios fiscais, contábeis e legais" pontua 8 para RGF (simulação no HTML salvo da execução 5).
+  - Se o mesmo texto existe escondido (menu lateral) e visível (lista na tela), o clique vai no visível.
+- Decidido em 12/10/2026: (1) segundo clique só em texto que o primeiro clique revelou (não estava visível antes) e nunca repetido; (2) na avaliação, procurar a evidência em todas as páginas do caminho e, se nenhuma servir, na URL do cadastro; só então conclui. Não atende só com prova da ausência (página certa sem a informação); página não localizada = Inconclusivo, inclusive em prefeitura nova sem cadastro (vai para revisão humana, que vira cadastro). A (2) torna erro de descoberta inofensivo para o score (Rio rgf e Rio despesa).
 
 ### Unidade avaliada (decidida em 10/10/2026)
 
@@ -350,7 +372,7 @@ Unidade avaliada: o Poder Executivo municipal (Prefeitura, fundos e autarquias),
 | Formulário JSF (".xhtml"), dependente de estado de sessão; parâmetro "?exercicio=2026" na URL, aceito sem validação (com "{ano}" literal a tela mostra "EXERCÍCIO : {ANO}" e usa 2026). Endereço direto deu "Internal Server Error" uma vez (10/10/2026, por volta de 16:35) e abriu normalmente às 16:43, sem visita prévia ao Supernova | Itaboraí (Supernova) | Navegador automatizado (JSF); endereço direto como ponto de partida, com novas tentativas em caso de erro do servidor e entrada pelo link do portal como alternativa. Validar o parâmetro do exercício no próprio coletor |
 | Consulta carregada dentro de quadro embutido (iframe) | Caxias (despesas) | Coletor entra no iframe para ler a tabela |
 | Erro do servidor exibido como modal dentro da página, com resposta HTTP normal ("Network error IOException: Address already in use: connect") | Caxias (despesas, 10/10 11:35) | Reconhecer textos de erro na página, não só o código HTTP; nova tentativa antes de registrar "indisponível" |
-| reCAPTCHA antes do botão Pesquisar | Caxias (despesas e RGF) | Não burlar captcha (limitação documentada). Ler o que está fora dele: datas de "Última Atualização" e cabeçalhos da tabela vazia (4.1 com confiança menor). Caminho alternativo confirmado na documentação: API de Dados Abertos (serviços despesas_todas e consulta_rgf_m2, seção 3.1), sem captcha; chamada real a testar no código |
+| reCAPTCHA antes do botão Pesquisar | Caxias (despesas e RGF) | Não burlar captcha (limitação documentada). Ler o que está fora dele: datas de "Última Atualização" e cabeçalhos da tabela vazia (4.1 com confiança menor). Caminho alternativo confirmado na documentação: API de Dados Abertos (serviços despesas_todas e consulta_rgf_m2, seção 3.1), sem captcha; confirmada no coletor em 12/10/2026 (POST JSON, 44.092 despesas de 2026) |
 | Dois formatos de tabela de despesas (colunas por fase x linha por fase) | Caxias x Japeri, Itaboraí, Cachoeiras | Regra do 4.1 aceita os dois formatos (seção 4) |
 | Linhas de total consolidado com data futura e nº de empenho 0 | Caxias (despesas) | Ignorar linhas de total e datas posteriores à avaliação no cálculo da data máxima |
 | Ordenação diferente entre sistemas; ausência de texto de atualização | Betha (decrescente), Supernova (crescente, sem rótulo) | Calcular a data máxima percorrendo a paginação; nunca assumir que a primeira página tem o mais recente |
@@ -400,6 +422,4 @@ Usar as notas do Radar da Transparência Pública (PNTP) como referência extern
 
 - Betha: comparar o texto "Sobre a LAI" de Cachoeiras com o de outro município cliente.
 - Rio: confirmar telefone e horário (2.5, 2.6), se entrarem no protótipo.
-- Rio 1.2: verificar no coletor (janela 1366x768) se o ícone "Transparência Rio" aparece sem rolar (possível desempate com Caxias).
-- Caxias: testar no código a chamada à API (método HTTP, resposta de despesas_todas e consulta_rgf_m2 para 2026, se precisa de cabeçalho ou sessão).
 - Betha: confirmar se o número da consulta (ex.: 31180) é o mesmo em outros municípios.

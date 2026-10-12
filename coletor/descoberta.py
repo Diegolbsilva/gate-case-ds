@@ -36,6 +36,10 @@ NEGATIVOS = {
 PENALIDADE_NEGATIVO = 6
 # Elementos que costumam ser clicaveis em qualquer fornecedor.
 SELETOR_CLICAVEL = "a, button, [onclick], [role=button], [role=link], [ng-click], [data-rellink], dxi-item, li"
+# Textos de botao que nao dizem para onde vao. O rotulo passa a incluir o titulo do bloco (card) ao redor.
+# Ex.: Betha mostra cards "Despesas publicas" com um botao "ACESSAR".
+GENERICOS = {"acessar", "acesse", "acessar sistema", "saiba mais", "clique aqui", "ver mais", "veja mais", "leia mais",
+             "consultar", "entrar", "abrir", "mais informacoes"}
 ONCLICK_URL = re.compile(r"""(?:location\.href\s*=|window\.open\()\s*['"]([^'"]+)['"]""")
 
 
@@ -63,6 +67,17 @@ def extrair_candidatos(html, url_base, frame=0):
             continue
         texto = re.sub(r"\s+", " ", el.get_text(" ", strip=True))
         rotulo = " ".join(filter(None, [texto, el.get("title", ""), el.get("aria-label", "")]))
+        if normalizar(texto) in GENERICOS:
+            # sobe ate 4 niveis procurando o bloco com titulo (h1 a h6) e usa os titulos como contexto
+            bloco = el.parent
+            for _ in range(4):
+                if bloco is None:
+                    break
+                titulos = bloco.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
+                if titulos:
+                    rotulo = f"{texto} ({' '.join(t.get_text(' ', strip=True) for t in titulos)[:150]})"
+                    break
+                bloco = bloco.parent
         if not (3 <= len(texto) <= 120 or 3 <= len(rotulo) <= 120):
             continue
         href = el.get("href") or ""
@@ -93,10 +108,43 @@ def pontuar(candidato, alvo):
     return pontos
 
 
-def melhores(candidatos, alvo, quantos=3, ignorar=()):
-    """Os candidatos com maior nota para o alvo (nota > 0). Em empate, o texto mais curto vem antes."""
-    ignorar = {normalizar(t) for t in ignorar}
-    notas = [(pontuar(c, alvo), c) for c in candidatos if normalizar(c["rotulo"]) not in ignorar]
+def chave(texto):
+    """Texto para comparacao: sem acento, minusculo e SEM espacos.
+
+    Sem espacos porque o navegador e o leitor de HTML juntam pedacos do texto de jeitos diferentes
+    (ex.: '<i>insert_chart</i><p>Despesas</p>' vira 'insert_chartDespesas' ou 'insert_chart Despesas').
+    """
+    return normalizar(texto).replace(" ", "")
+
+
+def generico(candidato):
+    return normalizar(candidato["texto"]) in GENERICOS
+
+
+def melhores(candidatos, alvo, quantos=3, ignorar=(), visiveis=None):
+    """Os candidatos com maior nota para o alvo (nota > 0). Em empate, o texto mais curto vem antes.
+
+    ignorar: textos que nao podem ser escolhidos (ja clicados ou ja visiveis antes do clique anterior).
+    Compara pelo texto E pelo rotulo (texto + title + aria-label), para nao escapar quando o elemento
+    repete o texto no title (erro visto em Caxias: clicou duas vezes no mesmo item).
+    Botao generico ("ACESSAR") e comparado so pelo rotulo, que inclui o titulo do card.
+
+    visiveis: textos visiveis agora na tela. Se informado, elemento ESCONDIDO e SEM ENDERECO nao pode ser
+    escolhido: o clique forcado nele nao funciona em todo portal (Betha: menu lateral fechado, nada acontece).
+    Escondido COM endereco continua valendo, porque o coletor abre o endereco direto.
+    """
+    ignorar = {chave(t) for t in ignorar}
+    visiveis = None if visiveis is None else {chave(t) for t in visiveis}
+
+    def bloqueado(c):
+        if generico(c):
+            return chave(c["rotulo"]) in ignorar
+        return chave(c["texto"]) in ignorar or chave(c["rotulo"]) in ignorar
+
+    def alcancavel(c):
+        return visiveis is None or c["destino"] or chave(c["texto"]) in visiveis or chave(c["rotulo"]) in visiveis
+
+    notas = [(pontuar(c, alvo), c) for c in candidatos if not bloqueado(c) and alcancavel(c)]
     notas = [(n, c) for n, c in notas if n > 0]
     notas.sort(key=lambda par: (-par[0], len(par[1]["rotulo"])))
     return [dict(c, nota=n) for n, c in notas[:quantos]]

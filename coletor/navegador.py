@@ -7,6 +7,7 @@ from playwright.sync_api import Error as ErroPlaywright
 from playwright.sync_api import TimeoutError as TempoEsgotado
 
 from coletor.banco import agora
+from coletor.descoberta import GENERICOS, normalizar
 
 # Textos que indicam erro mesmo quando o servidor responde com HTTP 200 (ex.: modal de erro em Caxias).
 TEXTOS_ERRO = {
@@ -93,6 +94,37 @@ def html_dos_frames(pagina):
     return saida
 
 
+JS_TEXTOS_VISIVEIS = """sel => Array.from(document.querySelectorAll(sel)).filter(e => {
+    const r = e.getBoundingClientRect();
+    const rendered = e.checkVisibility ? e.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})
+                                       : e.getClientRects().length > 0;
+    return rendered && r.width > 0 && r.height > 0;
+}).flatMap(e => [e.innerText || e.textContent || '', e.getAttribute('title') || '', e.getAttribute('aria-label') || ''])
+  .filter(t => t.trim().length > 0)"""
+
+
+def texto_da_pagina(pagina):
+    """Texto visivel de todas as molduras, para saber se um clique mudou alguma coisa."""
+    partes = []
+    for frame in pagina.frames:
+        try:
+            partes.append(frame.inner_text("body", timeout=5000))
+        except ErroPlaywright:
+            pass
+    return hashlib.sha256("\n".join(partes).encode("utf-8")).hexdigest()
+
+
+def textos_visiveis(pagina, seletor):
+    """Textos dos elementos clicaveis VISIVEIS agora (todas as molduras). Usado para saber o que um clique revelou."""
+    textos = []
+    for frame in pagina.frames:
+        try:
+            textos += frame.evaluate(JS_TEXTOS_VISIVEIS, seletor)
+        except ErroPlaywright:
+            pass
+    return textos
+
+
 SELETORES_FECHAR = ['[aria-label*="fechar" i]', '[aria-label*="close" i]', 'button.close', '.btn-close',
                     '.modal [data-dismiss="modal"]', '.modal [data-bs-dismiss="modal"]', '[class*="popup"] [class*="close"]']
 
@@ -131,7 +163,8 @@ def examinar_elemento(pagina, candidato):
 def seguir(contexto, pagina, candidato, tentativas):
     """Vai ao destino do candidato: abre o endereco se ele existe; senao clica no elemento.
 
-    Devolve (pagina_resultante, modo, ocorrencias). modo: 'endereco', 'mesma_aba', 'nova_aba' ou None (falhou).
+    Devolve (pagina_resultante, modo, ocorrencias). modo: 'endereco', 'mesma_aba', 'nova_aba';
+    em falha, pagina None e modo None ou 'sem_efeito' (clicou e nada mudou: mesmo endereco e mesmo texto na tela).
     """
     if candidato.get("destino"):
         nova = contexto.new_page()
@@ -148,7 +181,15 @@ def seguir(contexto, pagina, candidato, tentativas):
     if el.count() == 0:
         return None, None, [{"url": pagina.url, "tipo": "layout_inesperado", "tentativa": 1, "ocorrido_em": agora(),
                              "mensagem": f"Elemento nao encontrado ao vivo: {candidato['texto'][:80]}"}]
+    if not el.is_visible() and normalizar(candidato["texto"]) not in GENERICOS:
+        # o mesmo texto pode existir escondido (menu lateral) e visivel (lista na tela): usa o visivel
+        gemeos = frame.get_by_text(candidato["texto"], exact=True)
+        for i in range(min(gemeos.count(), 10)):
+            if gemeos.nth(i).is_visible():
+                el = gemeos.nth(i)
+                break
     abas_antes = len(contexto.pages)
+    antes = (pagina.url, texto_da_pagina(pagina))
     try:
         if el.is_visible():
             el.scroll_into_view_if_needed(timeout=5000)
@@ -167,4 +208,7 @@ def seguir(contexto, pagina, candidato, tentativas):
             pass
         nova.wait_for_timeout(3000)
         return nova, "nova_aba", []
+    if (pagina.url, texto_da_pagina(pagina)) == antes:
+        return None, "sem_efeito", [{"url": pagina.url, "tipo": "layout_inesperado", "tentativa": 1, "ocorrido_em": agora(),
+                                     "mensagem": f"Clique sem efeito em '{candidato['texto'][:60]}': a pagina nao mudou"}]
     return pagina, "mesma_aba", []
