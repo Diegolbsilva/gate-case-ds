@@ -25,6 +25,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--config", default=RAIZ / "config" / "entidades.yaml")
 parser.add_argument("--dados", default=RAIZ / "dados")
 parser.add_argument("--entidade", help="rodar so para uma entidade (id do cadastro)")
+parser.add_argument("--execucao", type=int,
+                    help="usar uma execucao ja aberta (coletor.executar); sem isso, abre e fecha a propria")
 args = parser.parse_args()
 
 cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
@@ -39,9 +41,12 @@ try:
                                    cwd=RAIZ).stdout.strip() or None
 except FileNotFoundError:
     versao_codigo = None
-execucao_id = banco.iniciar_execucao(con, origem="manual", versao_checklist="v1-2026-10",
-                                     versao_codigo=versao_codigo, observacao="Deteccao de fornecedor e APIs")
-print(f"Execucao {execucao_id} iniciada (codigo {versao_codigo})")
+if args.execucao:
+    execucao_id = args.execucao
+else:
+    execucao_id = banco.iniciar_execucao(con, origem="manual", versao_checklist="v1-2026-10",
+                                         versao_codigo=versao_codigo, observacao="Deteccao de fornecedor e APIs")
+print(f"Usando a execucao {execucao_id}" if args.execucao else f"Execucao {execucao_id} iniciada (codigo {versao_codigo})")
 
 sessao = requests.Session()
 sessao.headers["User-Agent"] = coleta["user_agent"]
@@ -64,7 +69,10 @@ for entidade in entidades:
     linha = con.execute(
         "SELECT url_destino FROM descobertas WHERE entidade_id = ? AND alvo = 'portal' AND sucesso = 1 "
         "ORDER BY id DESC LIMIT 1", (eid,)).fetchone()
-    url_portal, origem = (linha[0], "descoberta") if linha else (entidade["portal"], "cadastro")
+    url_portal, origem = (linha[0], "descoberta") if linha else (entidade.get("portal"), "cadastro")
+    if not url_portal:
+        print(f"\n{eid}: sem portal (nao achado pela descoberta e nao anotado no cadastro): pulado")
+        continue
     try:
         resposta = sessao.get(url_portal, timeout=60)
         html = resposta.text
@@ -93,6 +101,8 @@ for entidade in entidades:
         salvar_json(eid, f"resumo_{nome}", resumo, url_portal, f"resumo_{nome}")
         print(f"  adaptador {nome}: {json.dumps(resumo, ensure_ascii=False)}")
 
-banco.finalizar_execucao(con, execucao_id)
-print(f"\nExecucao {execucao_id} concluida. Arquivos em {pasta_dados / 'execucoes' / str(execucao_id)}")
+if not args.execucao:
+    banco.finalizar_execucao(con, execucao_id)
+print(f"\n{'Etapa terminada' if args.execucao else f'Execucao {execucao_id} concluida'}. "
+      f"Arquivos em {pasta_dados / 'execucoes' / str(execucao_id)}")
 con.close()

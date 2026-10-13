@@ -30,6 +30,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--config", default=RAIZ / "config" / "entidades.yaml")
 parser.add_argument("--dados", default=RAIZ / "dados")
 parser.add_argument("--entidade", help="rodar so para uma entidade (id do cadastro)")
+parser.add_argument("--execucao", type=int,
+                    help="usar uma execucao ja aberta (coletor.executar); sem isso, abre e fecha a propria")
 args = parser.parse_args()
 
 cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
@@ -44,9 +46,12 @@ try:
                                    cwd=RAIZ).stdout.strip() or None
 except FileNotFoundError:
     versao_codigo = None
-execucao_id = banco.iniciar_execucao(con, origem="manual", versao_checklist="v1-2026-10",
-                                     versao_codigo=versao_codigo, observacao="Descoberta automatica")
-print(f"Execucao {execucao_id} iniciada (codigo {versao_codigo})")
+if args.execucao:
+    execucao_id = args.execucao
+else:
+    execucao_id = banco.iniciar_execucao(con, origem="manual", versao_checklist="v1-2026-10",
+                                         versao_codigo=versao_codigo, observacao="Descoberta automatica")
+print(f"Usando a execucao {execucao_id}" if args.execucao else f"Execucao {execucao_id} iniciada (codigo {versao_codigo})")
 
 
 def registrar_pagina(pagina, papel, entidade_id):
@@ -70,7 +75,7 @@ with sync_playwright() as p:
         print(f"\n{eid}")
 
         # Passo 1: site oficial -> portal
-        portal_url, origem_inicio = entidade["portal"], "cadastro"
+        portal_url, origem_inicio = entidade.get("portal"), "cadastro"  # portal no cadastro e opcional
         capa = contexto.new_page()
         resposta, ocorrencias = abrir_pagina(capa, entidade["site_oficial"], coleta["tentativas"])
         for o in ocorrencias:
@@ -84,8 +89,9 @@ with sync_playwright() as p:
         if escolhido is None:
             banco.registrar_descoberta(con, execucao_id, eid, {
                 "alvo": "portal", "passo": 1, "url_origem": entidade["site_oficial"], "origem_inicio": "cadastro",
-                "sucesso": 0, "observacao": "Link do portal nao encontrado na capa do site; usado o cadastro"})
-            print(f"  portal   NAO ACHADO, usando cadastro: {portal_url}")
+                "sucesso": 0, "observacao": "Link do portal nao encontrado na capa do site; usado o cadastro"
+                                            if portal_url else "Link do portal nao encontrado e sem portal no cadastro"})
+            print(f"  portal   NAO ACHADO" + (f", usando cadastro: {portal_url}" if portal_url else ""))
         else:
             exame = examinar_elemento(capa, escolhido)
             destino, modo, ocorrencias = seguir(contexto, capa, escolhido, coleta["tentativas"])
@@ -103,6 +109,10 @@ with sync_playwright() as p:
                   f"rolar={exame['precisa_rolar']}) -> {destino.url if destino else 'FALHOU'}")
         for aberta in list(contexto.pages):
             aberta.close()
+
+        if not portal_url:
+            print("  sem portal (nao achado no site e nao anotado no cadastro): despesa, rgf e esic ficam sem pagina")
+            continue
 
         # Passo 2: portal -> cada alvo, ate 2 cliques
         for alvo in ALVOS:
@@ -153,6 +163,8 @@ with sync_playwright() as p:
                 aberta.close()
     navegador.close()
 
-banco.finalizar_execucao(con, execucao_id)
-print(f"\nExecucao {execucao_id} concluida. Arquivos em {pasta_dados / 'execucoes' / str(execucao_id)}")
+if not args.execucao:
+    banco.finalizar_execucao(con, execucao_id)
+print(f"\n{'Etapa terminada' if args.execucao else f'Execucao {execucao_id} concluida'}. "
+      f"Arquivos em {pasta_dados / 'execucoes' / str(execucao_id)}")
 con.close()

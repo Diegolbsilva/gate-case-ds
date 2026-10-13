@@ -48,6 +48,8 @@ parser.add_argument("--config", default=RAIZ / "config" / "entidades.yaml")
 parser.add_argument("--criterios", default=RAIZ / "config" / "criterios.yaml")
 parser.add_argument("--dados", default=RAIZ / "dados")
 parser.add_argument("--entidade", help="rodar so para uma entidade (id do cadastro)")
+parser.add_argument("--execucao", type=int,
+                    help="usar uma execucao ja aberta (coletor.executar); sem isso, abre e fecha a propria")
 args = parser.parse_args()
 
 cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
@@ -65,9 +67,12 @@ try:
                                    cwd=RAIZ).stdout.strip() or None
 except FileNotFoundError:
     versao_codigo = None
-execucao_id = banco.iniciar_execucao(con, origem="manual", versao_checklist=cfg_criterios["versao_checklist"],
-                                     versao_codigo=versao_codigo, observacao="Coleta das paginas do cadastro por criterio")
-print(f"Execucao {execucao_id} iniciada (codigo {versao_codigo})")
+if args.execucao:
+    execucao_id = args.execucao
+else:
+    execucao_id = banco.iniciar_execucao(con, origem="manual", versao_checklist=cfg_criterios["versao_checklist"],
+                                         versao_codigo=versao_codigo, observacao="Coleta das paginas do cadastro por criterio")
+print(f"Usando a execucao {execucao_id}" if args.execucao else f"Execucao {execucao_id} iniciada (codigo {versao_codigo})")
 
 with sync_playwright() as p:
     navegador = p.chromium.launch()
@@ -148,6 +153,8 @@ with sync_playwright() as p:
                     aberta.close()
     navegador.close()
 
-banco.finalizar_execucao(con, execucao_id)
-print(f"\nExecucao {execucao_id} concluida. Arquivos em {pasta_dados / 'execucoes' / str(execucao_id)}")
+if not args.execucao:
+    banco.finalizar_execucao(con, execucao_id)
+print(f"\n{'Etapa terminada' if args.execucao else f'Execucao {execucao_id} concluida'}. "
+      f"Arquivos em {pasta_dados / 'execucoes' / str(execucao_id)}")
 con.close()
