@@ -7,7 +7,8 @@ evidencias daquela rodada juntas, e o historico (§7) tem uma linha por rodada, 
 Como funciona: abre a execucao no banco e roda cada etapa como um processo separado, passando o id
 (--execucao). Processo separado de proposito: se uma etapa quebrar, as outras rodam mesmo assim, e a
 execucao fica marcada como 'falhou' com o nome da etapa que quebrou.
-Ordem: descobrir (acha o portal e as paginas) > apis (usa o portal achado pela descoberta) > cadastro.
+Ordem: descobrir (acha o portal e as paginas) > apis (usa o portal achado pela descoberta) > cadastro >
+anexos (le as paginas do e-SIC salvas pelas etapas anteriores, segue "Ver mais detalhes" e baixa os PDFs).
 
 Uso, na raiz do projeto, com o ambiente ativo:
     python -m coletor.executar                     (as 5 entidades)
@@ -24,7 +25,7 @@ import yaml
 from coletor import banco
 
 RAIZ = Path(__file__).resolve().parent.parent
-ETAPAS = ["descobrir", "apis", "cadastro"]
+ETAPAS = ["descobrir", "apis", "cadastro", "anexos"]  # anexos le as paginas do e-SIC salvas pelas anteriores
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", default=RAIZ / "config" / "entidades.yaml")

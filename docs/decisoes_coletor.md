@@ -194,6 +194,24 @@ Com isso, a descoberta acha o portal e as páginas sozinha, e as APIs reconhecem
 - **Limite:** se a mesma URL serve a dois critérios e o primeiro não é de consulta, a pesquisa não acontece no segundo. Não ocorre no cadastro atual.
 - **`config/criterios.yaml`:** os 6 critérios com o texto do checklist (código, categoria, descrição, fundamentação, tipo de verificação, a quem se aplica). O programa grava no banco na primeira execução. O peso de cada critério fica para a metodologia do score.
 
+## 5.4 Anexos do e-SIC (`anexos.py`, 13/10/2026)
+
+**O que faz:** lê as páginas do e-SIC já salvas na execução (cadastro do 15.4 e descoberta, alvo esic), segue o "Ver mais detalhes", baixa os PDFs e extrai o texto. Salva o PDF e o texto (`.txt`), com hash, ligados ao 15.4. É a 4ª etapa do `executar`.
+
+**Por que existe:** em Itaboraí, os prazos, as autoridades e o recurso estão no ANEXO 1, um PDF dentro da janela "Ver mais detalhes" da página "Prazos de respostas do SIC". Sem o texto do PDF, o LLM do 15.4 não teria o que ler.
+
+| Regra | Por quê |
+|---|---|
+| Página de detalhe: endereço dentro de `onclick="popup('...')"` ou link "ver mais detalhes", "mais detalhes", "saiba mais". Só 1 nível | É o padrão visto em Itaboraí (o endereço já está no HTML, não precisa clicar). Seguir mais níveis vira rastreamento do portal inteiro |
+| Só páginas do e-SIC (15.4) | Os outros critérios não precisam do conteúdo de PDFs (o 12.1 só verifica se o link existe) |
+| Até 5 PDFs por entidade e 15 MB por PDF | Limita o volume baixado de um órgão público |
+| Só do mesmo endereço da página ou dos `dominios_permitidos` | Não baixar arquivo de terceiros |
+| Sem navegador (requisição simples) | A página de detalhe e o PDF são arquivos comuns; mais rápido e mais simples |
+| Texto com `pypdf`, página por página, marcando "--- pagina N ---" | O LLM pode citar a página do trecho. `pypdf` é Python puro, sem dependência do sistema |
+| PDF sem texto (digitalizado) vira ocorrência "precisaria de OCR" | OCR fica fora do protótipo; o registro mostra onde ele faria falta |
+
+**Teste:** site simulado com a estrutura de Itaboraí (página com "Ver mais detalhes" em janela, PDF com texto, PDF só com imagem e PDF de outro site). O detalhe foi seguido, o texto do ANEXO 1 foi extraído, o PDF digitalizado foi registrado como "precisaria de OCR" e o PDF de outro site foi ignorado.
+
 ## 6. Banco (`banco.py` e `db/schema.sql`)
 
 | Decisão | Por quê |
