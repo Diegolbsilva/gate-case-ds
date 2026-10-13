@@ -66,7 +66,9 @@ def extrair_candidatos(html, url_base, frame=0):
         if el.find_parent(["script", "style", "noscript", "template"]):
             continue
         texto = re.sub(r"\s+", " ", el.get_text(" ", strip=True))
-        rotulo = " ".join(filter(None, [texto, el.get("title", ""), el.get("aria-label", "")]))
+        # alt das imagens dentro do elemento: banner "Portal da Transparencia" feito so de imagem (decidido em 13/10/2026)
+        alts = [img.get("alt", "").strip() for img in el.find_all("img") if img.get("alt", "").strip()]
+        rotulo = " ".join(filter(None, [texto, el.get("title", ""), el.get("aria-label", ""), *alts]))
         if normalizar(texto) in GENERICOS:
             # sobe ate 4 niveis procurando o bloco com titulo (h1 a h6) e usa os titulos como contexto
             bloco = el.parent

@@ -75,6 +75,8 @@ Cada alvo tem uma lista de termos com peso. A nota de um texto é a soma dos pes
 - Nota zero ou negativa: não clica e registra "não achado".
 - **Só clica no que uma pessoa conseguiria clicar:** elemento visível na tela, ou elemento com endereço (aí o coletor abre o endereço, que é equivalente). Elemento escondido e sem endereço fica de fora. **Erro real que motivou a regra:** a Betha tem um menu lateral fechado com "Execução Detalhada de Despesas". O robô forçava o clique nesse item escondido, nada acontecia, e o registro dizia sucesso. Os prints de antes e depois eram idênticos.
 - **Clique sem efeito é falha:** se o endereço e o texto da tela são os mesmos antes e depois do clique, o coletor registra "sem_efeito" e não sucesso.
+- **Imagem conta como texto (13/10/2026):** o rótulo de cada elemento clicável inclui o texto alternativo (`alt`) das imagens dentro dele. Banner "Portal da Transparência" feito só de imagem é achado; sem `alt`, nem o robô nem um leitor de tela o identificam, e o 1.2 dá Não atende.
+- **Capa do site salva (13/10/2026):** a descoberta salva a capa do site oficial (`descoberta_capa_site`, HTML e print) antes de procurar o link. É a evidência do 1.2 e a trava do Não atende: só vale se a capa carregou com conteúdo.
 - **Botão genérico ganha contexto:** "ACESSAR", "Saiba mais" e "Clique aqui" não dizem para onde vão. O rótulo passa a incluir os títulos do card ao redor (ex.: "ACESSAR (Despesas públicas Despesas realizadas pelo município.)"). É genérico: vale para qualquer portal com cards, não só para a Betha. Resultado (execução 6): em Cachoeiras, despesa e RGF passaram a ser achados em 2 cliques (card > consulta), chegando na mesma consulta do gabarito manual.
 - **Até 2 cliques.** O segundo clique só acontece se as duas condições valerem (decidido em 12/10/2026, depois da primeira execução real):
   - o texto tem **nota 6 ou mais**, para não clicar em algo pouco relacionado;
@@ -152,6 +154,20 @@ A detecção é gravada com a **evidência** (ex.: "domínio do portal: japeri.g
 | Betha | Ainda sem adaptador: a descoberta genérica resolve | Pendente: confirmar se o número das consultas é igual em todos os municípios Betha |
 
 **Como defender:** "Cada adaptador é escrito uma vez e serve para todos os municípios daquele fornecedor. A flag no cadastro existe só como exceção, para forçar um caminho quando a detecção errar."
+
+## 5.2.1 Prefeitura nova: o que precisa no cadastro
+
+Toda prefeitura precisa de uma entrada no `config/entidades.yaml`: é a lista de quem o sistema avalia. O mínimo são 5 campos:
+
+```yaml
+  - id: niteroi
+    nome: "Prefeitura Municipal de Niterói"
+    municipio: "Niterói"
+    tipo: prefeitura
+    site_oficial: "https://www.niteroi.rj.gov.br/"
+```
+
+Com isso, a descoberta acha o portal e as páginas sozinha, e as APIs reconhecem o fornecedor. Os demais campos são opcionais e só servem de reserva: `portal`, `dominios_permitidos` e `criterios` (URLs por critério). Sem portal achado e sem portal anotado, a descoberta registra a falha e segue para a próxima prefeitura; os critérios ficam Inconclusivos, sem erro. O campo `portal` passou a ser opcional em 13/10/2026 (antes o código exigia).
 
 ## 5.3 Páginas do cadastro (`cadastro.py` e `config/criterios.yaml`)
 

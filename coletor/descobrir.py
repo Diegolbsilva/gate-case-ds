@@ -83,6 +83,8 @@ with sync_playwright() as p:
         escolhido = None
         if resposta is not None:
             fechar_popups(capa)
+            # a capa do site e a evidencia do 1.2: o print mostra onde o link esta (ou que ele nao existe)
+            registrar_pagina(capa, "descoberta_capa_site", eid)
             escolhidos = melhores(candidatos_da_pagina(capa), "portal", quantos=1,
                                   visiveis=textos_visiveis(capa, SELETOR_CLICAVEL))
             escolhido = escolhidos[0] if escolhidos else None
