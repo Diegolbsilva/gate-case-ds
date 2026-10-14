@@ -182,6 +182,7 @@ Com isso, a descoberta acha o portal e as páginas sozinha, e as APIs reconhecem
 | Método `api` | Não coleta aqui | O `apis.py` já coleta pelo adaptador do fornecedor |
 | URL | Abre, fecha pop-ups, salva HTML e print | Evidência guardada com hash, como as demais |
 | Caminho descrito em texto (ex.: Caxias 15.4, "Portal > Pedido de Informação > ...") | Não coleta e avisa | Não há endereço: a página só existe navegando (Webrun não muda a URL). A evidência vem da descoberta |
+| `cliques` (13/10/2026): lista de textos para clicar a partir da capa do portal (ex.: Caxias 15.4: "Pedido de Informação (SIC e e-SIC)", "03 - Interposição de Recurso", "Orientações sobre Recurso") | Abre o portal, clica em ordem no elemento **visível** com exatamente aquele texto, espera a tela estabilizar e confere se ela mudou; no fim, salva HTML e print | A página do recurso de Caxias não tem endereço e fica além do 2º clique da descoberta. O print guarda o infográfico do recurso, que é imagem e vai para o LLM. Se um clique não acha o texto ou não muda nada, o caminho para e vira ocorrência, sem salvar página errada |
 | Mesma URL em vários critérios (ex.: capa do portal no 16.2) | Abre uma vez e liga o arquivo a cada critério | Menos acessos ao portal público, mesmo arquivo e mesmo hash |
 | `{ano}` na URL | Vira o ano corrente | Exercício avaliado |
 | Página fora do ar | 3 tentativas, depois Indisponível registrado | Mesma regra das demais coletas |
@@ -203,6 +204,7 @@ Com isso, a descoberta acha o portal e as páginas sozinha, e as APIs reconhecem
 | Regra | Por quê |
 |---|---|
 | Página de detalhe: endereço dentro de `onclick="popup('...')"` ou link "ver mais detalhes", "mais detalhes", "saiba mais". Só 1 nível | É o padrão visto em Itaboraí (o endereço já está no HTML, não precisa clicar). Seguir mais níveis vira rastreamento do portal inteiro |
+| PDF: `<a href>` com `.pdf`, ou endereço dentro de `onclick` (`window.open`, `location.href`) com `.pdf`, ou `<a href>` com texto "anexo", "download", "baixar", "arquivo". Depois de baixar, só aceita o arquivo que começa com `%PDF` | Itaboraí: o ANEXO 1 é um `<div onclick="window.open('...Prazos_Procedimentos_Comissao_Transparencia.pdf')">`, sem `<a>`. A conferência do `%PDF` evita guardar página comum como se fosse PDF |
 | Só páginas do e-SIC (15.4) | Os outros critérios não precisam do conteúdo de PDFs (o 12.1 só verifica se o link existe) |
 | Até 5 PDFs por entidade e 15 MB por PDF | Limita o volume baixado de um órgão público |
 | Só do mesmo endereço da página ou dos `dominios_permitidos` | Não baixar arquivo de terceiros |
@@ -210,7 +212,7 @@ Com isso, a descoberta acha o portal e as páginas sozinha, e as APIs reconhecem
 | Texto com `pypdf`, página por página, marcando "--- pagina N ---" | O LLM pode citar a página do trecho. `pypdf` é Python puro, sem dependência do sistema |
 | PDF sem texto (digitalizado) vira ocorrência "precisaria de OCR" | OCR fica fora do protótipo; o registro mostra onde ele faria falta |
 
-**Teste:** site simulado com a estrutura de Itaboraí (página com "Ver mais detalhes" em janela, PDF com texto, PDF só com imagem e PDF de outro site). O detalhe foi seguido, o texto do ANEXO 1 foi extraído, o PDF digitalizado foi registrado como "precisaria de OCR" e o PDF de outro site foi ignorado.
+**Teste:** site simulado com a estrutura de Itaboraí (página com "Ver mais detalhes" em janela, PDF com texto, PDF só com imagem e PDF de outro site). O detalhe foi seguido, o texto do ANEXO 1 foi extraído, o PDF digitalizado foi registrado como "precisaria de OCR" e o PDF de outro site foi ignorado. Primeira rodada real (execução 16): a página de detalhe foi baixada, mas o PDF não foi achado, porque estava num `onclick`; corrigido e testado de novo no simulado com o mesmo formato, incluindo um link "Baixar formulário" que leva a uma página comum (descartado pela conferência do `%PDF`).
 
 ## 6. Banco (`banco.py` e `db/schema.sql`)
 

@@ -10,6 +10,11 @@ O que coleta:
 - metodo 'api': nao coleta aqui (coletor/apis.py faz isso).
 - caminho descrito em texto (ex.: "Portal > Pedido de Informacao > ..."), sem URL: nao coleta e avisa.
   Nesses casos a evidencia vem das paginas da descoberta.
+- "cliques" (13/10/2026): lista de textos para clicar a partir da capa do portal, em ordem. Para portais
+  que nao mudam o endereco ao navegar (Webrun de Caxias): a pagina do recurso so existe depois de 3 cliques.
+  Clica no elemento VISIVEL com exatamente aquele texto, espera a tela estabilizar e confere se mudou;
+  se um clique falhar ou nao mudar nada, para e registra. No fim, salva HTML e print da tela (o print
+  guarda tambem infograficos em imagem, que o LLM pode ler).
 A mesma URL usada por mais de um criterio e aberta uma vez so; o arquivo e ligado a cada criterio.
 {ano} na URL vira o ano corrente (exercicio avaliado).
 
@@ -40,6 +45,21 @@ CRITERIOS_COM_PESQUISA = ("4.1", "4.6", "12.1")   # consultas de dados; nunca 15
 # \W* nas pontas: o nome do botao pode trazer o caractere do icone (ex.: Itaboraí, icone de lupa "fa-search"
 # desenhado por CSS entra no nome acessivel do botao, e "^pesquisar$" nao achava o botao na execucao 11)
 BOTAO_PESQUISA = re.compile(r"^\W*(pesquisar|consultar|buscar)\W*$", re.I)
+def clicar_texto(pagina, texto):
+    """Clica no primeiro elemento visivel com exatamente este texto (em qualquer moldura).
+    Devolve None se deu certo, ou o motivo da falha."""
+    for frame in pagina.frames:
+        alvos = frame.get_by_text(texto, exact=True)
+        for i in range(min(alvos.count(), 10)):
+            if alvos.nth(i).is_visible():
+                antes = texto_da_pagina(pagina)
+                alvos.nth(i).click(timeout=10000)
+                pagina.wait_for_timeout(3000)
+                esperar_estabilizar(pagina)
+                return None if texto_da_pagina(pagina) != antes else "clique sem efeito"
+    return "texto nao encontrado visivel na tela"
+
+
 MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro",
          "Novembro", "Dezembro"]
 
@@ -88,7 +108,33 @@ with sync_playwright() as p:
             if regra["metodo"] == "api":
                 print(f"  {codigo:5} api: coletado por coletor.apis")
                 continue
-            urls = regra["url"] if isinstance(regra["url"], list) else [regra["url"]]
+            for n, cliques in enumerate(regra.get("cliques", []), start=1):
+                papel = f"cadastro_{codigo}_cliques{n}"
+                pagina = contexto.new_page()
+                resposta, ocorrencias = abrir_pagina(pagina, entidade["portal"], coleta["tentativas"], espera_js_ms=ESPERA_JS_MS)
+                for o in ocorrencias:
+                    banco.registrar_ocorrencia(con, execucao_id, eid, o, criterio_id)
+                falha = "portal indisponivel" if resposta is None else None
+                if resposta is not None:
+                    fechar_popups(pagina)
+                for texto in ([] if falha else cliques):
+                    falha = clicar_texto(pagina, texto)
+                    if falha:
+                        falha = f"'{texto}': {falha}"
+                        break
+                if falha:
+                    banco.registrar_ocorrencia(con, execucao_id, eid, {
+                        "url": entidade["portal"], "tipo": "layout_inesperado", "tentativa": 1, "ocorrido_em": banco.agora(),
+                        "mensagem": f"Caminho de cliques {n} interrompido em {falha}"}, criterio_id)
+                    print(f"  {codigo:5} cliques {n}: FALHOU em {falha}")
+                else:
+                    for artefato in salvar_pagina(pagina, resposta, entidade["portal"], pasta, papel.replace(".", "_"), papel):
+                        banco.registrar_artefato(con, execucao_id, eid, artefato, criterio_id)
+                    print(f"  {codigo:5} cliques {n}: ok ({' > '.join(cliques)})")
+                for aberta in list(contexto.pages):
+                    aberta.close()
+            urls = regra.get("url") or []
+            urls = urls if isinstance(urls, list) else [urls]
             for n, url in enumerate(urls, start=1):
                 if not url.startswith("http"):
                     print(f"  {codigo:5} {n}. sem URL (caminho descrito: '{url[:60]}'): evidencia vem da descoberta")

@@ -101,9 +101,10 @@ entidades:
         observacao: "Alternativa navegador (reCAPTCHA): Prestação de Contas > Relatório de Gestão Fiscal (RGF). 5 demonstrativos por quadrimestre: agrupar por (ano, quadrimestre). Link de download em pasta tmp: guardar arquivo e hash"
       "15.4":
         metodo: navegador
-        url:
-          - "Portal > Pedido de Informação (SIC e e-SIC) > 02 - Serviço de Informação ao Cidadão - Eletrônico (primeiro passo)"
-          - "Portal > Pedido de Informação (SIC e e-SIC) > 03 - Interposição de Recurso > Orientações sobre Recurso"
+        # Webrun nao muda o endereco ao navegar: em vez de URL, a sequencia de cliques a partir da capa do portal
+        cliques:
+          - ["Pedido de Informação (SIC e e-SIC)", "02 - Serviço de Informação ao Cidadão - Eletrônico"]
+          - ["Pedido de Informação (SIC e e-SIC)", "03 - Interposição de Recurso", "Orientações sobre Recurso"]
         observacao: "Pedido em texto HTML; recurso em infografico (imagem, OCR). Juntar as duas paginas antes do LLM. Nao seguir ate o login do Colab"
       "16.2":
         metodo: navegador
