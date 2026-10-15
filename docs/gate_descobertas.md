@@ -345,7 +345,7 @@ Unidade avaliada: o Poder Executivo municipal (Prefeitura, fundos e autarquias),
 ### Score: decisões tomadas (10/10/2026)
 
 - Problema: com 6 critérios, 24 de 30 células deram Atende; Rio e Caxias empatam com 6/6.
-- Decidido: (A) notas graduais dentro dos critérios, usando o detalhe já coletado (15.4: subitens atendidos de 4; 12.1: quadrimestres de atraso; 1.2: cliques ou submenu); (D) pesos por importância (obrigação legal da LRF/LAI pesa mais que boa prática), com discussão dos problemas da média simples (pedida no §5).
+- Decidido: (A) notas graduais dentro dos critérios, usando o detalhe já coletado (15.4: subitens comprovados de 5; 12.1: quadrimestres de atraso; 1.2: cliques ou submenu); (D) pesos por importância (obrigação legal da LRF/LAI pesa mais que boa prática), com discussão dos problemas da média simples (pedida no §5).
 - Opcional, se sobrar tempo (17 e 18/10): (B) 16.5 acessibilidade automática (AccessMonitor ou axe-core via Playwright), única opção que tende a separar Rio de Caxias por dar nota contínua.
 - Descartado: (C) adicionar mais critérios simples (quase todos dariam Atende).
 - Na documentação: assumir o empate Rio/Caxias como resultado honesto (ambos atendem a tudo o que foi medido) e explicar que o poder de separação cresce com o número de critérios.
