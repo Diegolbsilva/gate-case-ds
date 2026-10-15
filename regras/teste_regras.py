@@ -6,6 +6,7 @@ Cada caso imprime ok ou FALHOU; no fim, o total.
 from datetime import date, datetime
 
 from coletor.descoberta import extrair_candidatos, pontuar
+from regras import llm_15_4 as llm
 from regras import verificacoes as v
 
 casos = []
@@ -84,5 +85,18 @@ caso("16.2 botao com texto", v.regra_16_2_pagina("<button>Alto contraste</button
 caso("16.2 so classe CSS nao conta",
      v.regra_16_2_pagina("<div class='accessibility-contrast'></div>" + LONGO)["status"], "nao_atende")
 caso("16.2 pagina vazia = sem evidencia", v.regra_16_2_pagina("<p>carregando</p>"), None)
+
+# 15.4 (o LLM em si nao e testado aqui: estes casos testam a conferencia da citacao e o status)
+pdf = "O recurso será submetido à Comissão Permanente\nde Proteção de Dados em até 20 (vinte)\ndias úteis."
+caso("15.4 citacao com acento, caixa e quebra de linha diferentes e aceita",
+     llm.verificar_trecho("o recurso sera submetido a comissao permanente de protecao de dados em ate 20 (vinte) dias uteis", pdf), True)
+caso("15.4 citacao inventada e recusada", llm.verificar_trecho("o prazo para recorrer e de 10 dias", pdf), False)
+caso("15.4 citacao com reticencias: cada parte precisa existir",
+     llm.verificar_trecho("O recurso será submetido à Comissão... em até 20 (vinte) dias úteis", pdf), True)
+caso("15.4 citacao vazia nao comprova", llm.verificar_trecho("", pdf), False)
+caso("15.4 5 de 5 = Atende", llm.classificar(5, True), "atende")
+caso("15.4 3 de 5 = Parcial", llm.classificar(3, True), "parcial")
+caso("15.4 0 de 5 com pagina do e-SIC legivel = Nao atende", llm.classificar(0, True), "nao_atende")
+caso("15.4 0 de 5 sem pagina legivel = sem evidencia", llm.classificar(0, False), None)
 
 print(f"\n{sum(casos)} de {len(casos)} casos ok")

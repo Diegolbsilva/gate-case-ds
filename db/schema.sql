@@ -163,6 +163,23 @@ CREATE TABLE IF NOT EXISTS ocorrencias (
     ocorrido_em  TEXT NOT NULL
 );
 
+-- Respostas do LLM (15.4), guardadas por chave = hash do modelo, da versao do prompt e da entrada.
+-- Reavaliar a mesma coleta reaproveita a resposta: nao chama a API de novo, nao gasta credito e da o
+-- mesmo resultado (reprodutivel). Tambem e a trilha de auditoria: o que foi perguntado e o que voltou.
+CREATE TABLE IF NOT EXISTS respostas_llm (
+    id              INTEGER PRIMARY KEY,
+    chave           TEXT NOT NULL UNIQUE,
+    tipo            TEXT NOT NULL CHECK (tipo IN ('transcricao', 'avaliacao')),
+    modelo          TEXT NOT NULL,
+    versao_prompt   TEXT NOT NULL,
+    execucao_id     INTEGER REFERENCES execucoes(id),
+    entidade_id     TEXT REFERENCES entidades(id),
+    resposta        TEXT NOT NULL,                      -- texto (transcricao) ou JSON (avaliacao)
+    tokens_entrada  INTEGER,
+    tokens_saida    INTEGER,
+    criado_em       TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_avaliacoes_entidade_criterio ON avaliacoes (entidade_id, criterio_id);
 CREATE INDEX IF NOT EXISTS idx_evidencias_avaliacao ON evidencias (avaliacao_id);
 CREATE INDEX IF NOT EXISTS idx_artefatos_execucao_entidade ON artefatos (execucao_id, entidade_id);

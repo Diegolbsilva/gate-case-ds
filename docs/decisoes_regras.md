@@ -49,6 +49,25 @@ Código: `regras/verificacoes.py` (uma regra por critério) e `regras/avaliar.py
 - **Melhor resultado entre as fontes** (seção 1, passo 3): decorre da proposta 2 aprovada em 12/10/2026.
 - **4.6 pela API com entidade sem resposta (15/10/2026, opção B).** Se alguma entidade do portal não respondeu, a data máxima vista é só um mínimo: a data real é igual ou mais recente. Se o mínimo já dá Atende, Atende está provado e fica (com aviso na justificativa). Se dá Parcial ou Não atende, não está provado: a API vira "não é evidência" e a avaliação usa as outras fontes; sem nenhuma, Inconclusivo, com o motivo na justificativa. Mesma lógica de "Não atende só com prova". Caso real: execução 19, Japeri, uma entidade com 3 timeouts e data vista 08/10 (2 dias úteis em 14/10). Alternativas descartadas: manter Parcial com aviso (pune o município por falha de rede nossa) e tentar de novo só as entidades que falharam (mais tempo, sem garantia; pode entrar depois).
 
+## 4.0 Critério 15.4 com LLM (decisões de 15/10/2026)
+
+Código: `regras/llm_15_4.py`, chamado por `regras/avaliar.py`. Por que LLM só aqui: o 15.4 é semântico (cada portal escreve prazos, autoridades e procedimentos de um jeito, em página, PDF ou infográfico); nos outros critérios uma regra explícita é mais barata, previsível e auditável.
+
+| Decisão | Escolha | Por quê |
+|---|---|---|
+| Subitens | 5, nas palavras do critério: prazos de resposta; prazo recursal; autoridades competentes para o exame dos pedidos; procedimento do pedido; procedimento do recurso | Texto literal, sem adaptação. A nota gradual (comprovados / 5) alimenta o score |
+| Autoridades (subitem 3) | Só conta a autoridade que examina o **pedido**. A que examina apenas o recurso não basta | O objetivo do critério é o cidadão conhecer o processo inteiro; o 1º exame é o passo mais básico, e o recurso só existe depois dele. Na 1ª versão do prompt (v1) a autoridade do recurso também contava, por uma explicação acrescentada sem decisão; a auditoria da execução 25 mostrou que Caxias, Itaboraí e Rio só citavam a autoridade do recurso. Corrigido na v2 |
+| Prazo recursal | Conta o prazo de **resposta ao recurso** ou o prazo para **entrar** com ele; o detalhe grava qual foi achado | Leitura literal: "prazos de resposta ao cidadão, incluindo o recursal". Caso real: o infográfico de Caxias traz "em até 20 (vinte) dias úteis" para a decisão do recurso, mas não o prazo para recorrer |
+| Citação | Obrigatória em cada subitem que atende: trecho literal e contínuo de até 300 caracteres, com a fonte (F1, F2...) | O código confere se o trecho existe na fonte (sem acento, caixa ou diferença de espaço). Trecho que não existe = subitem não comprovado. Protege contra resposta inventada |
+| Imagem | Uma chamada separada **transcreve** a imagem, sem saber do critério; a transcrição vira fonte de texto e a citação é conferida nela | A prova fica verificável como nas páginas. A transcrição não conhece o critério, então não tem motivo para "achar" prazo; a imagem e o hash ficam guardados para conferência humana |
+| Status | 5 de 5 = Atende; 1 a 4 = Parcial; 0 = Não atende só se havia página do e-SIC legível; senão Inconclusivo | Mesma lógica das outras regras: Não atende só com prova |
+| Modelo | Claude Sonnet 5.5, `effort: low`, resposta em JSON com formato fixo (`output_config.format`) | Tarefa de leitura e extração. JSON fixo evita resposta fora do formato |
+| Fontes | Páginas do e-SIC (descoberta, cadastro, anexos), texto dos PDFs e imagens do caminho de cliques; página "não encontrada" fica de fora; textos repetidos entram uma vez; CPF mascarado antes de enviar | Japeri: o 2º clique da descoberta cai em `informabr.cgu.gov.br/pagina-nao-encontrada` |
+| Respostas guardadas | Tabela `respostas_llm`, por hash do modelo, da versão do prompt e da entrada | Reavaliar a mesma coleta não chama a API de novo (reprodutível e sem custo). É também a trilha de auditoria |
+| Sem chave | 15.4 Inconclusivo, com o motivo; chave só no `.env` (fora do Git), modelo em `.env.exemplo` | Quem testa o projeto não precisa da chave de quem desenvolveu |
+
+Pendentes (14:45 de 15/10): se os PDFs de lei do Rio contam como divulgação na seção do e-SIC; se a página do Fala.BR (plataforma da CGU) conta como seção do e-SIC de Japeri. O detalhe grava o tipo de fonte de cada citação (página, PDF, imagem), então a decisão pode ser aplicada sem chamar o LLM de novo.
+
 ## 4.1 Limitações e melhorias futuras
 
 | Limitação | Efeito | Melhoria futura |
@@ -71,5 +90,13 @@ Com as decisões finais de 13/10 (1.2 e 4.6 acima) o resultado na execução 16 
 
 - Japeri 4.6: Parcial, gabarito Atende. Uma entidade não respondeu à API (3 timeouts). Levou à decisão de 15/10 (seção 4): com a regra nova, vira Inconclusivo. O gabarito do 4.6 depende do dia e passa a ser gravado com data.
 - Rio 4.1: Inconclusivo. A execução rodou com a espera antiga (90 s); a tabela de empenhos ainda mostrava o spinner. O próprio portal recomenda usar pelo menos 2 filtros além de mês e ano, porque a consulta do ano inteiro é pesada.
+
+## 7. Resultado na execução oficial de 15/10/2026 (execução 25, código `28e059e`)
+
+24 de 25, com o gabarito do 4.6 conferido à mão no próprio dia (as 5 entidades, registrado em `config/gabarito.yaml`). Nas células conclusivas: 24 de 24. Inconclusivas: 1 de 25.
+
+- Rio 4.1: Atende. Primeira execução oficial com a espera de 180 s; a tabela de empenhos carregou.
+- Japeri 4.6: Inconclusivo, gabarito Parcial (último empenho da Prefeitura em 09/10). A Prefeitura não respondeu à API (é a 3ª execução seguida: 16, 19 e 25), e a data vista sem ela (08/10) não prova atraso (decisão B). O sistema não errou o veredito; deixou de dar um. A falha da API da Prefeitura é sistemática, não ocasional: provável tempo limite curto para a consulta dela (o portal avisa que, sem descrição, "a pesquisa será mais lenta"). Correção (15/10): tempo limite das APIs de 90 s para 180 s (`TEMPO_LIMITE_API_S` em `coletor/fornecedores.py`). Teste só da etapa de APIs (execução 26): 14 de 14 entidades responderam, 143 registros, data máxima 09/10/2026, igual à conferência manual (empenho nº 925 da Prefeitura).
+- O que a conferência de 15/10 mostra sobre 14/10: o sistema deu Parcial (data vista 08/10, sem a Prefeitura), mas a Prefeitura tem empenho de 09/10. Se ele já estava publicado em 14/10, o certo era Atende. É o tipo de erro que a decisão B evita.
 
 Testes: 31 casos pequenos montados a partir dos portais reais, todos ok (`python -m regras.teste_regras`).

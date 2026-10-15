@@ -39,13 +39,19 @@ def detectar(url_portal, html):
     return achados
 
 
+# Tempo limite de cada chamada. Era 90 s; a Prefeitura de Japeri nao respondeu em 90 s nas execucoes 16, 19 e 25
+# (os 13 fundos sim). 180 s e o mesmo limite da espera de pagina carregando (Contas Rio). Custo: se a API nunca
+# responder, sao ate 3 tentativas de 180 s nessa entidade (cerca de 9 min a mais na execucao).
+TEMPO_LIMITE_API_S = 180
+
+
 def baixar_json(sessao, metodo, url, tentativas, **kwargs):
     """Chama a API com novas tentativas. Devolve (dados, ocorrencias, status_http). dados = None se falhou."""
     ocorrencias = []
     for n in range(1, tentativas + 1):
         tipo, mensagem, status = None, None, None
         try:
-            resposta = sessao.request(metodo, url, timeout=90, **kwargs)
+            resposta = sessao.request(metodo, url, timeout=TEMPO_LIMITE_API_S, **kwargs)
             status = resposta.status_code
             if status >= 400:
                 tipo = "bloqueio" if status in (401, 403) else ("erro_servidor" if status >= 500 else "erro_http")
@@ -53,7 +59,7 @@ def baixar_json(sessao, metodo, url, tentativas, **kwargs):
             else:
                 return resposta.json(), ocorrencias, status
         except requests.Timeout:
-            tipo, mensagem = "timeout", "API nao respondeu em 90 s"
+            tipo, mensagem = "timeout", f"API nao respondeu em {TEMPO_LIMITE_API_S} s"
         except requests.RequestException as erro:
             tipo, mensagem = "erro_http", str(erro)[:300]
         except ValueError:

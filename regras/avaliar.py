@@ -16,7 +16,7 @@ Para cada entidade e criterio:
 
 Grava em avaliacoes (status, justificativa, detalhe) e evidencias (trecho, arquivo, hash).
 Rodar de novo para a mesma execucao apaga e refaz as avaliacoes dela.
-O 15.4 fica de fora: e avaliado pelo LLM (bloco de 15/10).
+O 15.4 e avaliado pelo LLM (regras/llm_15_4.py), com a citacao de cada subitem conferida no texto de origem.
 
 Uso, na raiz do projeto, com o ambiente ativo:
     python -m regras.avaliar                 (ultima execucao concluida)
@@ -30,6 +30,7 @@ from pathlib import Path, PureWindowsPath
 import yaml
 
 from coletor import banco
+from regras import llm_15_4 as llm
 from regras import verificacoes as v
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -179,6 +180,30 @@ for entidade in cfg["entidades"]:
                  artefato["caminho"] if artefato else None, artefato["hash"] if artefato else None,
                  artefato["coletado_em"] if artefato else banco.agora()))
         resultados[(eid, codigo)] = (status, rotulo, justificativa)
+
+    # 15.4: LLM com citacao conferida (regras/llm_15_4.py). Sem fonte: Indisponivel ou Inconclusivo, como os outros.
+    criterio_id = ids_criterios["15.4"]
+    res = llm.avaliar_15_4(con, execucao_id, eid, artefatos, criterio_id)
+    if res and "status" in res:
+        status, justificativa = res["status"], res["justificativa"]
+    else:
+        status = "indisponivel" if res is None and teve_erro_acesso else "inconclusivo"
+        justificativa = ("Nenhuma pagina do e-SIC salva e houve erro de acesso" if status == "indisponivel" else
+                         "Nao deu para avaliar com o LLM; revisao humana" + (f" ({res['nao_evidencia']})" if res else
+                                                                             " (nenhuma pagina do e-SIC salva)"))
+    cur = con.execute(
+        "INSERT INTO avaliacoes (execucao_id, entidade_id, criterio_id, status, nota, metodo, justificativa, url_avaliada, "
+        "avaliado_em, detalhe_json) VALUES (?, ?, ?, ?, ?, 'llm', ?, ?, ?, ?)",
+        (execucao_id, eid, criterio_id, status, res.get("nota") if res else None, v.mascarar(justificativa),
+         res["evidencias"][0][0]["url_final"] if res and res.get("evidencias") else None, banco.agora(),
+         json.dumps(res.get("detalhe", {}) if res else {}, ensure_ascii=False)))
+    for artefato, trecho in (res or {}).get("evidencias", []):
+        con.execute(
+            "INSERT INTO evidencias (avaliacao_id, artefato_id, tipo, url, conteudo, caminho_arquivo, hash_sha256, coletado_em) "
+            "VALUES (?, ?, 'trecho', ?, ?, ?, ?, ?)",
+            (cur.lastrowid, artefato["id"], artefato["url_final"] or artefato["url"], v.mascarar(trecho)[:2000],
+             artefato["caminho"], artefato["hash"], artefato["coletado_em"]))
+    resultados[(eid, "15.4")] = (status, "LLM" if res and "status" in res else None, justificativa)
 con.commit()
 
 # conferencia rapida contra o gabarito manual (nao entra no calculo)
