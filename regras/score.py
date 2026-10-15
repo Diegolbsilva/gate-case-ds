@@ -80,13 +80,19 @@ def calcular(con, execucao_id, cfg):
         entraram = [c for c in por_criterio.values() if c["nota"] is not None]
         aplicaveis = [c for c in por_criterio.values() if c["status"] != "nao_aplicavel"]
         essenciais = {k: c for k, c in por_criterio.items() if c["classificacao"] == "essencial"}
-        pendentes = [f"{k} ({c['status']})" for k, c in essenciais.items() if c["status"] != "atende"]
+        # Faixa (decisao de 15/10/2026): essencial com falha provada da entidade (Parcial, Nao atende, Indisponivel)
+        # bloqueia Diamante/Ouro/Prata. Essencial Inconclusivo nao bloqueia (nao ha prova de culpa da entidade):
+        # a faixa sai marcada como provisoria, com o criterio nao verificado.
+        pendentes = [f"{k} ({c['status']})" for k, c in essenciais.items() if c["status"] not in ("atende", "inconclusivo")]
+        nao_verificados = [k for k, c in essenciais.items() if c["status"] == "inconclusivo"]
         score = soma / soma_pesos if soma_pesos else None
         detalhe = {
             "criterios": por_criterio,
             "essenciais_completos": not pendentes,
             "essenciais_pendentes": pendentes,
+            "essenciais_nao_verificados": nao_verificados,
             "faixa": faixa(score * 100, not pendentes, cfg) if score is not None else None,
+            "faixa_provisoria": bool(nao_verificados),
             "media_simples_binaria": round(sum(c["status"] == "atende" for c in entraram) / len(entraram), 4) if entraram else None,
             "media_simples_notas": round(sum(c["nota"] for c in entraram) / len(entraram), 4) if entraram else None,
             "fora_do_calculo": [f"{k} ({c['status']})" for k, c in por_criterio.items() if c["nota"] is None],
@@ -105,9 +111,10 @@ def imprimir(resultado):
     print(f"\n{'entidade':22} {'score':>6} {'faixa':13} {'essenciais':11} {'cobertura':9} {'media bin.':>10} "
           f"{'media notas':>11}  fora do calculo / essenciais pendentes")
     for eid, score, entraram, aplicaveis, d in sorted(resultado, key=lambda r: -(r[1] or 0)):
-        print(f"{eid:22} {(score or 0) * 100:6.1f} {d['faixa'] or '-':13} {'completos' if d['essenciais_completos'] else 'pendentes':11} "
+        print(f"{eid:22} {(score or 0) * 100:6.1f} {(d['faixa'] or '-') + ('*' if d.get('faixa_provisoria') else ''):13} {'completos' if d['essenciais_completos'] else 'pendentes':11} "
               f"{entraram} de {aplicaveis:<4} {(d['media_simples_binaria'] or 0) * 100:10.1f} {(d['media_simples_notas'] or 0) * 100:11.1f}  "
               f"{', '.join(dict.fromkeys(d['fora_do_calculo'] + d['essenciais_pendentes'])) or '-'}")
+    print("* faixa provisoria: algum criterio essencial ficou Inconclusivo (nao verificado) nesta execucao")
 
 
 if __name__ == "__main__":
