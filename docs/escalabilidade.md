@@ -1,4 +1,6 @@
-# Escalabilidade: de 5 para 5.000 portais (§17)
+# Escalabilidade: de 5 para 5.000 portais (§8 e §17)
+
+O §8 pede a discussão de 11 pontos (seção 6 deste documento). O §17 pergunta se a solução continuaria confiável, explicável e economicamente viável avaliando 5.000 portais todos os meses.
 
 Ponto de partida: o que foi medido no protótipo. Projeções para 5.000 portais são estimativas de ordem de grandeza, a confirmar com um piloto maior.
 
@@ -30,7 +32,7 @@ Ponto de partida: o que foi medido no protótipo. Projeções para 5.000 portais
 
 | Recurso | Protótipo | 5.000 portais (estimativa) | Como resolver |
 |---|---|---|---|
-| Tempo de coleta | ~4 min por entidade, uma por vez | ~330 h por ciclo se sequencial | Paralelismo por entidade: com 50 navegadores simultâneos, ~7 h por ciclo completo, viável diariamente |
+| Tempo de coleta | ~4 min por entidade, uma por vez | ~330 h por ciclo completo se sequencial | Em ciclo mensal (§17), 330 h cabem no mês com poucos workers: 10 navegadores simultâneos fazem o ciclo em ~33 h. Com 50, ~7 h, o que permite ciclos mais frequentes para os critérios que mudam rápido |
 | Frequência | Tudo a cada execução | Desnecessário | Frequência por critério: 4.6 diário; 12.1 após cada prazo quadrimestral da LRF; 1.2, 15.4 e 16.2 semanal |
 | Armazenamento de artefatos | Pasta local | ~1 milhão de arquivos por ciclo diário completo | Armazenamento de objetos com deduplicação por hash (página igual à anterior não é gravada de novo) e política de retenção |
 | Banco | SQLite | Escrita concorrente de dezenas de workers | PostgreSQL com a mesma modelagem |
@@ -67,3 +69,19 @@ de objetos              │
 | Resultado mudar por mudança do sistema, não do portal | Versão do código em cada execução e reavaliação das coletas antigas com o código novo antes de comparar (`docs/validacao.md`, seção 4) |
 | Captcha e bloqueio de robôs | Não contornar: registrar como ocorrência; quando houver API pública do fornecedor, preferir a API |
 | Dados pessoais em páginas de despesa | Mascaramento de CPF nas evidências (já adotado), acesso aos arquivos brutos restrito |
+
+## 6. Os 11 pontos do §8
+
+| Ponto do §8 | Como o protótipo trata | Em escala |
+|---|---|---|
+| Execução de múltiplas análises | Uma execução cobre todas as entidades, com id, data e versão do código | Uma tarefa por entidade × etapa, executadas em paralelo |
+| Processamento assíncrono | Etapas em processos separados (`coletor/executar.py`): a falha de uma etapa não derruba as outras | Workers independentes consumindo uma fila |
+| Filas | Não implementadas (5 entidades, sequencial) | Fila de tarefas com reentrega em caso de falha do worker |
+| Controle de erros | 3 tentativas com intervalo crescente; cada falha gravada em `ocorrencias` com tipo (timeout, erro do servidor, bloqueio, captcha, layout inesperado) | Mesma tabela, com alarme por fornecedor e por tipo de erro |
+| Sites indisponíveis | Status Indisponível (fora do ar após as tentativas), distinto de Inconclusivo e de Não atende; nova tentativa na execução seguinte | Reagendamento automático da entidade, sem esperar o próximo ciclo |
+| Páginas muito grandes | Espera por estabilização com limite (até 180 s com indicador de carregamento); PDFs até 15 MB e 5 por entidade; texto enviado ao LLM limitado a 60 mil caracteres por fonte | Limites por tipo de fonte, com registro do corte no detalhe (já gravado em `avisos`) |
+| Limites de requisições | Uma visita por vez, identidade própria no User-Agent, nenhum contorno de captcha | Limite de requisições por domínio e horários de menor uso |
+| Conteúdo dinâmico | Navegador real (Playwright), espera por estabilização, cliques para portais que não mudam de endereço, molduras (iframes) lidas | Igual; adaptador por fornecedor quando houver API |
+| Diferentes tecnologias de portal | Descoberta genérica por texto clicável + adaptadores de fornecedor (GeoSiap, Modernização/Webrun) | Novos adaptadores conforme o levantamento de fornecedores |
+| Necessidade de reprocessamento | Coleta separada da avaliação: `regras.avaliar --execucao N` reaplica regras novas sobre coletas antigas sem acessar o portal; respostas do LLM guardadas | Reprocessamento em lote após cada mudança de regra, com a versão da regra registrada |
+| Custos computacionais | ~19 min por execução de 5 entidades; LLM só no critério semântico, com cache por hash da entrada; ~118 mil tokens de entrada por execução | Cache do LLM, deduplicação de arquivos por hash e frequência por critério reduzem o custo por ciclo |

@@ -141,7 +141,7 @@ else:
             mudancas.append({"Data": m["data"][:10], "Execução": m["execucao"], "Entidade": nomes[eid], "Critério": m["criterio"],
                              "De": STATUS.get(m["de"], (m["de"],))[0], "Para": STATUS.get(m["para"], (m["para"],))[0],
                              "Sentido": m["sentido"],
-                             "Mesma versão do código": "sim" if m["mesma_versao_do_codigo"] else "não (pode ser efeito do sistema)"})
+                             "Mesma versão do coletor": "sim" if m["mesma_versao_do_codigo"] else "não (pode ser efeito do sistema)"})
     df = pd.DataFrame(pontos)
     if df.empty:
         st.info("Ainda não há execuções suficientes para mostrar evolução.")

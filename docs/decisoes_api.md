@@ -7,6 +7,8 @@ Atende ao §9 do enunciado (endpoints de entidades, avaliação mais recente, hi
 | Endpoint | Retorna |
 |---|---|
 | `GET /entidades` | Entidades ativas, com score, faixa (e se é provisória), cobertura e essenciais pendentes da avaliação mais recente |
+| `GET /entidades/{id}` | Cadastro da entidade, critérios aplicáveis ao tipo dela e score mais recente |
+| `GET /entidades/{id}/criterios` | Todos os critérios do checklist do protótipo, com `aplicavel` (para o tipo da entidade) e o status na avaliação mais recente |
 | `GET /entidades/{id}/avaliacao` | Avaliação mais recente: cada critério com status, nota, método (regra, API ou LLM), justificativa, URL avaliada e evidências (trecho mascarado, caminho do arquivo, hash, data da coleta); e o score |
 | `GET /entidades/{id}/historico` | Score, faixa, versão do código e status de cada critério por execução; lista de mudanças entre execuções seguidas (de, para, melhorou ou piorou, em qual execução e data) |
 | `GET /criterios` | Critérios avaliados, com categoria, descrição, fundamentação, tipo de verificação, classificação e peso no score |

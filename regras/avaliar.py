@@ -69,6 +69,16 @@ def caminho_local(caminho):
     return pasta_dados.joinpath(*partes[partes.index("execucoes"):])
 
 
+def gravar_nao_aplicavel(eid, codigo, tipo):
+    """Criterio que nao vale para o tipo da entidade (secao 11 do enunciado): status proprio, fora do score e da
+    cobertura, sem coleta nem regra. A aplicabilidade vem de config/criterios.yaml (aplica_a), gravada no banco."""
+    justificativa = f"Criterio nao se aplica a entidade do tipo '{tipo}' (config/criterios.yaml, aplica_a)"
+    con.execute("INSERT INTO avaliacoes (execucao_id, entidade_id, criterio_id, status, metodo, justificativa, avaliado_em, "
+                "detalhe_json) VALUES (?, ?, ?, 'nao_aplicavel', 'manual', ?, ?, ?)",
+                (execucao_id, eid, ids_criterios[codigo], justificativa, banco.agora(), json.dumps({"tipo_entidade": tipo})))
+    resultados[(eid, codigo)] = ("nao_aplicavel", None, justificativa)
+
+
 resultados = {}
 for entidade in cfg["entidades"]:
     eid = entidade["id"]
@@ -88,7 +98,13 @@ for entidade in cfg["entidades"]:
         "WHERE execucao_id = ? AND entidade_id = ? AND alvo = 'portal' AND passo = 1 ORDER BY id DESC LIMIT 1",
         (execucao_id, eid)).fetchone()
 
+    aplicaveis = {r[0] for r in con.execute(
+        "SELECT k.codigo FROM criterio_aplicabilidade ca JOIN criterios k ON k.id = ca.criterio_id "
+        "WHERE ca.tipo_entidade = ?", (entidade["tipo"],))}
     for codigo in CRITERIOS:
+        if codigo not in aplicaveis:
+            gravar_nao_aplicavel(eid, codigo, entidade["tipo"])
+            continue
         criterio_id = ids_criterios[codigo]
         # 1. fontes, na ordem API > descoberta > cadastro: (rotulo, artefato ou None, funcao que avalia)
         fontes = []
@@ -184,28 +200,31 @@ for entidade in cfg["entidades"]:
         resultados[(eid, codigo)] = (status, rotulo, justificativa)
 
     # 15.4: LLM com citacao conferida (regras/llm_15_4.py). Sem fonte: Indisponivel ou Inconclusivo, como os outros.
-    criterio_id = ids_criterios["15.4"]
-    res = llm.avaliar_15_4(con, execucao_id, eid, artefatos, criterio_id)
-    if res and "status" in res:
-        status, justificativa = res["status"], res["justificativa"]
+    if "15.4" not in aplicaveis:
+        gravar_nao_aplicavel(eid, "15.4", entidade["tipo"])
     else:
-        status = "indisponivel" if res is None and teve_erro_acesso else "inconclusivo"
-        justificativa = ("Nenhuma pagina do e-SIC salva e houve erro de acesso" if status == "indisponivel" else
-                         "Nao deu para avaliar com o LLM; revisao humana" + (f" ({res['nao_evidencia']})" if res else
-                                                                             " (nenhuma pagina do e-SIC salva)"))
-    cur = con.execute(
-        "INSERT INTO avaliacoes (execucao_id, entidade_id, criterio_id, status, nota, metodo, justificativa, url_avaliada, "
-        "avaliado_em, detalhe_json) VALUES (?, ?, ?, ?, ?, 'llm', ?, ?, ?, ?)",
-        (execucao_id, eid, criterio_id, status, res.get("nota") if res else None, v.mascarar(justificativa),
-         res["evidencias"][0][0]["url_final"] if res and res.get("evidencias") else None, banco.agora(),
-         json.dumps(res.get("detalhe", {}) if res else {}, ensure_ascii=False)))
-    for artefato, trecho in (res or {}).get("evidencias", []):
-        con.execute(
-            "INSERT INTO evidencias (avaliacao_id, artefato_id, tipo, url, conteudo, caminho_arquivo, hash_sha256, coletado_em) "
-            "VALUES (?, ?, 'trecho', ?, ?, ?, ?, ?)",
-            (cur.lastrowid, artefato["id"], artefato["url_final"] or artefato["url"], v.mascarar(trecho)[:2000],
-             artefato["caminho"], artefato["hash"], artefato["coletado_em"]))
-    resultados[(eid, "15.4")] = (status, "LLM" if res and "status" in res else None, justificativa)
+        criterio_id = ids_criterios["15.4"]
+        res = llm.avaliar_15_4(con, execucao_id, eid, artefatos, criterio_id)
+        if res and "status" in res:
+            status, justificativa = res["status"], res["justificativa"]
+        else:
+            status = "indisponivel" if res is None and teve_erro_acesso else "inconclusivo"
+            justificativa = ("Nenhuma pagina do e-SIC salva e houve erro de acesso" if status == "indisponivel" else
+                             "Nao deu para avaliar com o LLM; revisao humana" + (f" ({res['nao_evidencia']})" if res else
+                                                                                 " (nenhuma pagina do e-SIC salva)"))
+        cur = con.execute(
+            "INSERT INTO avaliacoes (execucao_id, entidade_id, criterio_id, status, nota, metodo, justificativa, url_avaliada, "
+            "avaliado_em, detalhe_json) VALUES (?, ?, ?, ?, ?, 'llm', ?, ?, ?, ?)",
+            (execucao_id, eid, criterio_id, status, res.get("nota") if res else None, v.mascarar(justificativa),
+             res["evidencias"][0][0]["url_final"] if res and res.get("evidencias") else None, banco.agora(),
+             json.dumps(res.get("detalhe", {}) if res else {}, ensure_ascii=False)))
+        for artefato, trecho in (res or {}).get("evidencias", []):
+            con.execute(
+                "INSERT INTO evidencias (avaliacao_id, artefato_id, tipo, url, conteudo, caminho_arquivo, hash_sha256, coletado_em) "
+                "VALUES (?, ?, 'trecho', ?, ?, ?, ?, ?)",
+                (cur.lastrowid, artefato["id"], artefato["url_final"] or artefato["url"], v.mascarar(trecho)[:2000],
+                 artefato["caminho"], artefato["hash"], artefato["coletado_em"]))
+        resultados[(eid, "15.4")] = (status, "LLM" if res and "status" in res else None, justificativa)
 con.commit()
 
 # conferencia rapida contra o gabarito manual (nao entra no calculo)

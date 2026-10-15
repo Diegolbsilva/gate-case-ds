@@ -1,4 +1,4 @@
-"""Validacao (par. 15 do enunciado: comparar o resultado do sistema com uma avaliacao de referencia).
+"""Validacao dos resultados (par. 15, 16 e 18 do enunciado: validar a IA, qualidade dos resultados, avaliar os proprios resultados).
 
 Le o banco e os arquivos de configuracao; nao acessa portal nem chama o LLM. Rodar depois de
 regras.avaliar nas execucoes a validar (o avaliar grava as avaliacoes e o score de cada execucao).

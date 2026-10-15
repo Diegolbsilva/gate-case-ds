@@ -76,7 +76,7 @@ Comparação com os selos do Radar da Transparência Pública (PNTP), observados
 | Duque de Caxias | Ouro (2025) | Diamante |
 | Itaboraí | Prata | Ouro |
 
-A ordem das três entidades é a mesma do PNTP (Rio e Caxias à frente de Itaboraí). Duas das três ficam uma faixa acima do selo oficial. Explicação provável: o sistema mede 6 critérios e o PNTP mede mais de 100; quem cumpre os 6 tende a ficar no topo. A comparação completa entra na validação (§15).
+A ordem das três entidades é a mesma do PNTP (Rio e Caxias à frente de Itaboraí). Duas das três ficam uma faixa acima do selo oficial. Explicação provável: o sistema mede 6 critérios e o PNTP mede mais de 100; quem cumpre os 6 tende a ficar no topo. A comparação completa está em `docs/validacao.md`.
 
 ## 7. Limitações
 

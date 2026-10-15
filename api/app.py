@@ -94,6 +94,33 @@ def listar_entidades():
     return resultado
 
 
+@app.get("/entidades/{entidade_id}", summary="Uma entidade: cadastro, criterios aplicaveis e score mais recente")
+def consultar_entidade(entidade_id: str):
+    con = conectar()
+    entidade = entidade_ou_404(con, entidade_id)
+    execs = oficiais(con)
+    aplicaveis = [r["codigo"] for r in con.execute(
+        "SELECT k.codigo FROM criterio_aplicabilidade ca JOIN criterios k ON k.id = ca.criterio_id "
+        "WHERE ca.tipo_entidade = ? ORDER BY CAST(k.codigo AS REAL)", (entidade["tipo"],))]
+    return {**entidade, "criterios_aplicaveis": aplicaveis,
+            "ultima_execucao": execs[-1] if execs else None,
+            "score": score_da_execucao(con, execs[-1]["id"], entidade_id) if execs else None}
+
+
+@app.get("/entidades/{entidade_id}/criterios",
+         summary="Criterios da entidade: se se aplicam ao tipo dela e o status na avaliacao mais recente")
+def criterios_da_entidade(entidade_id: str):
+    con = conectar()
+    entidade = entidade_ou_404(con, entidade_id)
+    execs = oficiais(con)
+    status = status_por_criterio(con, execs[-1]["id"], entidade_id) if execs else {}
+    return [{**dict(r), "aplicavel": bool(r["aplicavel"]), "status_mais_recente": status.get(r["codigo"])}
+            for r in con.execute(
+                "SELECT k.codigo, k.categoria, k.descricao, EXISTS (SELECT 1 FROM criterio_aplicabilidade ca "
+                "WHERE ca.criterio_id = k.id AND ca.tipo_entidade = ?) AS aplicavel FROM criterios k "
+                "ORDER BY CAST(k.codigo AS REAL)", (entidade["tipo"],))]
+
+
 @app.get("/entidades/{entidade_id}/avaliacao", summary="Avaliacao mais recente de uma entidade, com evidencias")
 def avaliacao_mais_recente(entidade_id: str):
     con = conectar()

@@ -68,6 +68,17 @@ Código: `regras/llm_15_4.py`, chamado por `regras/avaliar.py`. Por que LLM só 
 
 Pendentes (14:45 de 15/10): se os PDFs de lei do Rio contam como divulgação na seção do e-SIC; se a página do Fala.BR (plataforma da CGU) conta como seção do e-SIC de Japeri. O detalhe grava o tipo de fonte de cada citação (página, PDF, imagem), então a decisão pode ser aplicada sem chamar o LLM de novo.
 
+## 4.0.1 Critérios não aplicáveis (§11)
+
+| Pergunta do §11 | Tratamento |
+|---|---|
+| Identificar o tipo de entidade | Campo `tipo` no cadastro (`config/entidades.yaml`): prefeitura, câmara, autarquia, fundo ou outro. O tipo é dado de entrada (o §4 o lista entre as entradas), não inferido: em fiscalização, classificar errado o tipo mudaria os critérios exigidos |
+| Determinar os critérios aplicáveis | Cada critério declara `aplica_a` em `config/criterios.yaml`, gravado na tabela `criterio_aplicabilidade`. O checklist do case tem matriz comum (vale para todos) e critérios específicos; os 6 do protótipo são da matriz comum |
+| Tratar critérios não aplicáveis | `regras/avaliar.py` grava o status Não aplicável, sem coleta nem regra, com a justificativa (tipo da entidade e origem da regra de aplicabilidade) |
+| Não penalizar a entidade | Não aplicável fica fora do score e fora do denominador da cobertura ("5 de 5", não "5 de 6"). `GET /entidades/{id}/criterios` mostra o que se aplica e o que não se aplica |
+
+Teste: retirada a aplicabilidade do 16.2 para prefeituras numa cópia do banco, as 5 entidades receberam Não aplicável no 16.2, com cobertura 5 de 5 e score calculado sobre os 5 critérios restantes.
+
 ## 4.1 Limitações e melhorias futuras
 
 | Limitação | Efeito | Melhoria futura |
