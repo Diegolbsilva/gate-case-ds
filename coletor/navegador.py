@@ -138,7 +138,7 @@ def carregando(pagina):
     return False
 
 
-def esperar_estabilizar(pagina, minimo_caracteres=200, maximo_s=30, maximo_carregando_s=90, intervalo_ms=1500):
+def esperar_estabilizar(pagina, minimo_caracteres=200, maximo_s=30, maximo_carregando_s=180, intervalo_ms=1500):
     """Espera a tela montar: texto com pelo menos `minimo_caracteres`, igual em duas leituras seguidas
     e sem indicador de carregamento visivel.
 
@@ -146,8 +146,8 @@ def esperar_estabilizar(pagina, minimo_caracteres=200, maximo_s=30, maximo_carre
     mostrava so o icone de carregando depois de 6 s; na execucao 9 a tela montou, mas a tabela de empenhos
     ficou com um spinner (div.show-spinner) enquanto o texto ao redor ja estava parado, e a pagina foi salva
     sem a tabela. Por isso o texto parado nao basta: tambem nao pode haver spinner visivel.
-    Limites: 30 s se nada indica carregamento; ate 90 s enquanto houver spinner visivel (consulta pesada,
-    como os 223 mil empenhos do Rio). Devolve True se estabilizou, False se estourou o tempo
+    Limites: 30 s se nada indica carregamento; ate 180 s enquanto houver spinner visivel (consulta pesada,
+    como os 223 mil empenhos do Rio; 90 s bastou na execucao 12 e nao bastou na 16). Devolve True se estabilizou, False se estourou o tempo
     (a pagina e salva assim mesmo, e a regra decide com o que tiver).
     """
     anterior, inicio = None, time.monotonic()

@@ -215,6 +215,11 @@ def regra_4_6_api(fornecedor, dados, data_avaliacao, resumo):
     resultado = classificar_atualizacao(max(datas), data_avaliacao, "data mais recente dos registros da API")
     sem_resposta = (resumo or {}).get("entidades_sem_resposta")
     if sem_resposta:
+        # Com entidade sem resposta, a data maxima vista e so um minimo: a real e igual ou mais recente.
+        # Atende continua provado; Parcial ou Nao atende nao (decisao de 15/10/2026, opcao B).
+        if resultado["status"] != "atende":
+            return {"nao_evidencia": f"API sem resposta de {', '.join(sem_resposta)}; a data vista "
+                                     f"({max(datas):%d/%m/%Y}) daria {resultado['status']}, mas a real pode ser mais recente"}
         resultado["detalhe"]["entidades_sem_resposta"] = sem_resposta
         resultado["justificativa"] += f" (sem resposta da API: {', '.join(sem_resposta)})"
     resultado["trecho"] = f"Data maxima entre {len(datas)} registros: {max(datas):%d/%m/%Y}"

@@ -47,6 +47,7 @@ Código: `regras/verificacoes.py` (uma regra por critério) e `regras/avaliar.py
 - **4.6, seguir a referência legal que o avaliador usaria.** "Tempo real" = disponibilização até o 1º dia útil seguinte à data do registro contábil (Decreto 10.540/2020, art. 7º, §1º, com o requisito do Anexo incluído pelo Decreto 11.644/2023; o Decreto 7.185/2010, que tinha a mesma regra, foi revogado pelo art. 19 do Decreto 10.540/2020). Avaliando no dia D, o registro do último dia útil antes de D ainda está no prazo (vence no próprio D); o de qualquer dia útil anterior já tem que estar publicado. Por isso: até 1 dia útil entre a data mais recente e D = Atende. Feriado não é dia útil.
 - **4.6, Parcial mantido** (de 2 dias úteis a 30 dias corridos). O decreto não define parcial; é critério nosso, para separar "atrasou alguns dias" de "parou de publicar" e dar mais informação ao score.
 - **Melhor resultado entre as fontes** (seção 1, passo 3): decorre da proposta 2 aprovada em 12/10/2026.
+- **4.6 pela API com entidade sem resposta (15/10/2026, opção B).** Se alguma entidade do portal não respondeu, a data máxima vista é só um mínimo: a data real é igual ou mais recente. Se o mínimo já dá Atende, Atende está provado e fica (com aviso na justificativa). Se dá Parcial ou Não atende, não está provado: a API vira "não é evidência" e a avaliação usa as outras fontes; sem nenhuma, Inconclusivo, com o motivo na justificativa. Mesma lógica de "Não atende só com prova". Caso real: execução 19, Japeri, uma entidade com 3 timeouts e data vista 08/10 (2 dias úteis em 14/10). Alternativas descartadas: manter Parcial com aviso (pune o município por falha de rede nossa) e tentar de novo só as entidades que falharam (mais tempo, sem garantia; pode entrar depois).
 
 ## 4.1 Limitações e melhorias futuras
 
@@ -64,4 +65,11 @@ Código: `regras/verificacoes.py` (uma regra por critério) e `regras/avaliar.py
 
 Com as decisões finais de 13/10 (1.2 e 4.6 acima) o resultado na execução 16 é o mesmo: 24 de 25.
 
-Testes: 28 casos pequenos montados a partir dos portais reais, todos ok (`python -m regras.teste_regras`).
+## 6. Resultado na execução oficial de 14/10/2026 (execução 19)
+
+23 de 25. As diferenças:
+
+- Japeri 4.6: Parcial, gabarito Atende. Uma entidade não respondeu à API (3 timeouts). Levou à decisão de 15/10 (seção 4): com a regra nova, vira Inconclusivo. O gabarito do 4.6 depende do dia e passa a ser gravado com data.
+- Rio 4.1: Inconclusivo. A execução rodou com a espera antiga (90 s); a tabela de empenhos ainda mostrava o spinner. O próprio portal recomenda usar pelo menos 2 filtros além de mês e ano, porque a consulta do ano inteiro é pesada.
+
+Testes: 31 casos pequenos montados a partir dos portais reais, todos ok (`python -m regras.teste_regras`).

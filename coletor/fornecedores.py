@@ -84,12 +84,14 @@ def geosiap(sessao, url_portal, tentativas, dias=30):
     excluidas = [e["ds_entidade"] for e in entidades if e not in incluidas]
     fim, inicio = date.today(), date.today() - timedelta(days=dias)
     url_despesas = f"{base}/execucao/despesas_detalhadas/despesas_detalhadas"
-    por_entidade, registros, datas = {}, 0, []
+    por_entidade, registros, datas, sem_resposta = {}, 0, [], []
     for e in incluidas:
         dados, oc, _ = baixar_json(sessao, "GET", url_despesas, tentativas, params={
             "id_entidade": e["id_entidade"], "data_inicial": inicio.isoformat(), "data_final": fim.isoformat()})
-        ocorrencias += oc
+        # identifica a entidade na ocorrencia: a URL e a mesma para todas, so muda o parametro id_entidade
+        ocorrencias += [dict(o, mensagem=f"[entidade {e['id_entidade']} {e['ds_entidade']}] {o['mensagem']}") for o in oc]
         if dados is None:
+            sem_resposta.append(e["ds_entidade"])
             continue
         linhas = dados.get("despesas_detalhadas", []) if isinstance(dados, dict) else []
         por_entidade[e["id_entidade"]] = {"ds_entidade": e["ds_entidade"], "resposta": dados}
@@ -97,6 +99,7 @@ def geosiap(sessao, url_portal, tentativas, dias=30):
         datas += [l["dt_doc_despesa"] for l in linhas if l.get("dt_doc_despesa")]
     arquivos.append(("api_despesas_detalhadas", por_entidade, url_despesas))
     resumo = {"sucesso": bool(por_entidade), "entidades_incluidas": len(incluidas), "entidades_com_resposta": len(por_entidade),
+              "entidades_sem_resposta": sem_resposta,  # a regra precisa saber: data maxima sem elas pode estar subestimada
               "entidades_excluidas": excluidas, "periodo": [inicio.isoformat(), fim.isoformat()],
               "registros": registros, "data_maxima": max(datas) if datas else None,
               "rgf_rota_conhecida": f"{raiz}/portal-transparencia/publicacoes?id_publicacao_tipo=5"}

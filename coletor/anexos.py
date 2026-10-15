@@ -169,7 +169,7 @@ for entidade in entidades:
         print(f"  {len(pdfs)} PDFs encontrados; baixando so os {MAX_PDFS_POR_ENTIDADE} primeiros")
 
     # 4. baixa e extrai o texto (numeracao anexo_1, anexo_2... so dos que sao PDF de verdade)
-    salvos = 0
+    salvos, hashes_salvos = 0, set()
     for n, (url, rotulo) in enumerate(pdfs[:MAX_PDFS_POR_ENTIDADE], start=1):
         resposta = baixar(url, eid)
         if resposta is None:
@@ -185,6 +185,11 @@ for entidade in entidades:
         if not conteudo.startswith(b"%PDF"):
             print(f"  link {n} '{rotulo}': nao e PDF, descartado")
             continue  # link com texto "anexo"/"baixar" que leva a uma pagina comum
+        hash_pdf = hashlib.sha256(conteudo).hexdigest()
+        if hash_pdf in hashes_salvos:
+            print(f"  pdf {n} '{rotulo}': mesmo arquivo de um PDF ja salvo, ignorado")
+            continue  # Caxias: "Visualizar PDF" e "Baixar PDF" apontam para o mesmo documento
+        hashes_salvos.add(hash_pdf)
         salvos += 1
         salvar(eid, f"anexo_{salvos}.pdf", conteudo, url, "pdf", "anexo_pdf")
         try:

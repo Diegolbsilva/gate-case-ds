@@ -28,6 +28,7 @@ Uso, na raiz do projeto, com o ambiente ativo:
     python -m coletor.cadastro [--entidade id]
 """
 import argparse
+import hashlib
 import re
 import subprocess
 from datetime import date
@@ -58,6 +59,28 @@ def clicar_texto(pagina, texto):
                 esperar_estabilizar(pagina)
                 return None if texto_da_pagina(pagina) != antes else "clique sem efeito"
     return "texto nao encontrado visivel na tela"
+
+
+# Imagens de conteudo (infografico): minimo de 600 px de largura e 400 de altura no tamanho original.
+# Icones e logos ficam de fora. Motivo: em Caxias o recurso e um infografico dentro de uma caixa com rolagem
+# propria; o print da pagina inteira corta a imagem no meio. Baixando o arquivo, o LLM le a imagem inteira.
+# So conta imagem que NAO estava na tela antes dos cliques: a que ja estava e do layout do portal (banner,
+# logo de menu). Caso real, execucao 20: o icone "Boletim Oficial" e 2 banners vinham nos dois caminhos.
+JS_IMAGENS_GRANDES = """() => [...document.images]
+    .filter(i => i.naturalWidth >= 600 && i.naturalHeight >= 400)
+    .map(i => i.currentSrc || i.src)"""
+MAX_IMAGENS = 5
+
+
+def imagens_grandes(pagina):
+    """Enderecos das imagens grandes em todas as molduras da pagina, sem repeticao."""
+    srcs = []
+    for frame in pagina.frames:
+        try:
+            srcs += frame.evaluate(JS_IMAGENS_GRANDES)
+        except Exception:
+            pass
+    return list(dict.fromkeys(srcs))
 
 
 MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro",
@@ -117,6 +140,7 @@ with sync_playwright() as p:
                 falha = "portal indisponivel" if resposta is None else None
                 if resposta is not None:
                     fechar_popups(pagina)
+                imagens_do_layout = set(imagens_grandes(pagina)) if resposta is not None else set()
                 for texto in ([] if falha else cliques):
                     falha = clicar_texto(pagina, texto)
                     if falha:
@@ -131,6 +155,26 @@ with sync_playwright() as p:
                     for artefato in salvar_pagina(pagina, resposta, entidade["portal"], pasta, papel.replace(".", "_"), papel):
                         banco.registrar_artefato(con, execucao_id, eid, artefato, criterio_id)
                     print(f"  {codigo:5} cliques {n}: ok ({' > '.join(cliques)})")
+                    # imagens grandes que surgiram com os cliques, baixadas em resolucao original (sessao do navegador)
+                    novas = [s for s in imagens_grandes(pagina) if s not in imagens_do_layout]
+                    for m, src in enumerate(novas[:MAX_IMAGENS], start=1):
+                        try:
+                            resp_img = contexto.request.get(src, timeout=60000)
+                        except Exception as erro:
+                            print(f"  {codigo:5} cliques {n}: imagem {m} FALHOU ({str(erro)[:80]})")
+                            continue
+                        corpo = resp_img.body() if resp_img.ok else b""
+                        extensao = "png" if corpo.startswith(b"\x89PNG") else ("jpg" if corpo.startswith(b"\xff\xd8") else None)
+                        if not extensao:
+                            continue  # nao e PNG nem JPEG (ou falhou): ignora
+                        nome = f"{papel.replace('.', '_')}_imagem{m}.{extensao}"
+                        (pasta / nome).write_bytes(corpo)
+                        banco.registrar_artefato(con, execucao_id, eid, {
+                            "papel": f"{papel}_imagem", "url": src, "url_final": src,
+                            "tipo": "png" if extensao == "png" else "outro", "caminho": str(pasta / nome),
+                            "hash_sha256": hashlib.sha256(corpo).hexdigest(), "tamanho_bytes": len(corpo),
+                            "status_http": resp_img.status, "coletado_em": banco.agora()}, criterio_id)
+                        print(f"  {codigo:5} cliques {n}: imagem {m} salva ({len(corpo) // 1024} KB)")
                 for aberta in list(contexto.pages):
                     aberta.close()
             urls = regra.get("url") or []

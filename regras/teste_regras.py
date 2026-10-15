@@ -57,6 +57,14 @@ caso("4.6 dados de 07/10 avaliados em 13/10 = Parcial (08/10 ja deveria estar pu
 caso("4.6 data de 20 dias atras = parcial",
      v.regra_4_6_pagina("Última atualização dos dados em 23/09/2026" + LONGO, hoje, coleta)["status"], "parcial")
 caso("4.6 data futura e ignorada", v.regra_4_6_pagina("Dados atualizados até: 31/10/2026" + LONGO, hoje, coleta), None)
+api_0810 = {"7": {"resposta": {"despesas_detalhadas": [{"dt_doc_despesa": "2026-10-08"}]}}}
+falhou = {"entidades_sem_resposta": ["PREFEITURA MUNICIPAL DE JAPERI"]}
+caso("4.6 API com entidade sem resposta: Parcial nao provado vira 'nao e evidencia' (execucao 19)",
+     "nao_evidencia" in v.regra_4_6_api("geosiap", api_0810, date(2026, 10, 14), falhou), True)
+caso("4.6 API com entidade sem resposta: Atende continua provado",
+     v.regra_4_6_api("geosiap", api_0810, hoje, falhou)["status"], "atende")
+caso("4.6 API com todas respondendo: Parcial vale",
+     v.regra_4_6_api("geosiap", api_0810, date(2026, 10, 14), {"entidades_sem_resposta": []})["status"], "parcial")
 
 # 12.1
 rio = ("<title>LRF Quadrimestrais Ano 2026</title><h3>Relatório de Gestão Fiscal (RGF)</h3><h4>Anexo 1</h4><p><a href='a.pdf'>1º Quadrimestre</a></p>"

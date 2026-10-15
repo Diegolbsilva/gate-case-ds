@@ -132,7 +132,11 @@ for entidade in cfg["entidades"]:
             if artefato is not None and not artefato["arquivo"].exists():
                 avaliadas.append((rotulo, artefato, None, "arquivo nao encontrado"))
                 continue
-            avaliadas.append((rotulo, artefato, regra(artefato), None))
+            res = regra(artefato)
+            if res and "nao_evidencia" in res:  # a regra leu, mas o dado nao prova nada (motivo vai para o detalhe)
+                avaliadas.append((rotulo, artefato, None, res["nao_evidencia"]))
+                continue
+            avaliadas.append((rotulo, artefato, res, None))
 
         # 3. melhor resultado (empate: a primeira fonte na ordem)
         validas = [x for x in avaliadas if x[2]]
@@ -152,6 +156,9 @@ for entidade in cfg["entidades"]:
             status = "indisponivel" if sem_fonte and teve_erro_acesso else "inconclusivo"
             justificativa = ("Nenhuma fonte salva e houve erro de acesso" if status == "indisponivel" else
                              "Nenhuma das fontes salvas mostrou a informacao de forma legivel; revisao humana")
+            motivos = [f"{r}: {o}" for r, _, x, o in avaliadas if o and o != "arquivo nao encontrado"]
+            if motivos:
+                justificativa += " (" + "; ".join(motivos) + ")"
             metodo = "navegador"
         detalhe = {"fonte_usada": rotulo, **(res["detalhe"] if res else {}),
                    "fontes_avaliadas": [{"fonte": r, "status": (x["status"] if x else None), "obs": o}
