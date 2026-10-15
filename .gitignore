@@ -222,3 +222,6 @@ __marimo__/
 # Projeto
 *.db
 dados/
+
+# amostra publica do banco (CPF mascarado e verificado por db/exportar_amostra.py)
+!amostra/gate.db

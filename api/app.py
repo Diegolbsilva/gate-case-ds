@@ -9,7 +9,7 @@ entidades (sem "--entidade") e ja avaliadas. Testes parciais (ex.: so o cadastro
 Uso, na raiz do projeto:
     uvicorn api.app:app --reload
     documentacao interativa em http://127.0.0.1:8000/docs
-Banco: dados/gate.db, ou o caminho na variavel de ambiente GATE_BANCO.
+Banco: GATE_BANCO, se definido; senao dados/gate.db; senao amostra/gate.db (amostra publica do repositorio).
 
 Arquivos de evidencia (HTML, prints, PDFs) nao sao servidos pela API: podem conter dados pessoais de credores
 (nome e CPF em tabelas de despesa). A API devolve o caminho, o hash e o trecho ja mascarado.
@@ -23,7 +23,14 @@ import yaml
 from fastapi import FastAPI, HTTPException
 
 RAIZ = Path(__file__).resolve().parent.parent
-BANCO = Path(os.environ.get("GATE_BANCO", RAIZ / "dados" / "gate.db"))
+# Banco: GATE_BANCO, se definido; senao dados/gate.db (coleta local); senao a amostra publica do repositorio
+# (amostra/gate.db, gerada por db/exportar_amostra.py), para quem clona o projeto ver os resultados sem coletar.
+if os.environ.get("GATE_BANCO"):
+    BANCO, FONTE = Path(os.environ["GATE_BANCO"]), "GATE_BANCO"
+elif (RAIZ / "dados" / "gate.db").exists():
+    BANCO, FONTE = RAIZ / "dados" / "gate.db", "coleta local (dados/gate.db)"
+else:
+    BANCO, FONTE = RAIZ / "amostra" / "gate.db", "amostra publica (amostra/gate.db)"
 CFG_SCORE = yaml.safe_load((RAIZ / "config" / "score.yaml").read_text(encoding="utf-8"))
 ORDEM = {"nao_atende": 0, "parcial": 1, "atende": 2}  # para dizer se um criterio melhorou ou piorou
 SQL_OFICIAIS = ("SELECT e.id, e.iniciada_em, e.versao_codigo FROM execucoes e WHERE e.status = 'concluida' "
@@ -148,6 +155,6 @@ def listar_criterios():
                                  "FROM criterios ORDER BY CAST(codigo AS REAL)")]
 
 
-@app.get("/execucoes", summary="Execucoes oficiais avaliadas")
+@app.get("/execucoes", summary="Execucoes oficiais avaliadas e a fonte dos dados")
 def listar_execucoes():
-    return oficiais(conectar())
+    return {"fonte": FONTE, "execucoes": oficiais(conectar())}

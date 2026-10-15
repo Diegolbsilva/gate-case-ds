@@ -10,8 +10,10 @@ execucao fica marcada como 'falhou' com o nome da etapa que quebrou.
 Ordem: descobrir (acha o portal e as paginas) > apis (usa o portal achado pela descoberta) > cadastro >
 anexos (le as paginas do e-SIC salvas pelas etapas anteriores, segue "Ver mais detalhes" e baixa os PDFs).
 
+Ao final, roda a avaliacao (regras, LLM e score) da mesma execucao, salvo com --sem-avaliar.
+
 Uso, na raiz do projeto, com o ambiente ativo:
-    python -m coletor.executar                     (as 5 entidades)
+    python -m coletor.executar                     (as 5 entidades, coleta e avaliacao)
     python -m coletor.executar --entidade japeri   (so uma, para teste)
 """
 import argparse
@@ -33,6 +35,8 @@ parser.add_argument("--criterios", default=RAIZ / "config" / "criterios.yaml")
 parser.add_argument("--dados", default=RAIZ / "dados")
 parser.add_argument("--entidade", help="rodar so para uma entidade (id do cadastro)")
 parser.add_argument("--origem", default="manual", choices=["manual", "agendada"])
+parser.add_argument("--sem-avaliar", action="store_true",
+                    help="so coleta; sem isso, roda as regras, o LLM e o score no fim (python -m regras.avaliar)")
 args = parser.parse_args()
 
 cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
@@ -84,3 +88,10 @@ resumo = con.execute(
 print(f"\n=== Execucao {execucao_id}: {status} em {(time.monotonic() - inicio) / 60:.1f} min. "
       f"Artefatos: {resumo[0]}, passos de descoberta: {resumo[1]}, ocorrencias: {resumo[2]} ===")
 con.close()
+
+# Avaliacao (regras, LLM do 15.4 e score) sobre a coleta que acabou de terminar, para que um unico comando
+# deixe a execucao pronta para a API e o dashboard. Execucao parcial (--entidade) ou com falha nao e avaliada.
+if not args.sem_avaliar and status == "concluida" and not args.entidade:
+    print(f"\n=== Avaliacao da execucao {execucao_id} ===", flush=True)
+    subprocess.run([sys.executable, "-m", "regras.avaliar", "--execucao", str(execucao_id), "--dados", str(args.dados),
+                    "--config", str(args.config)], cwd=RAIZ)

@@ -21,5 +21,6 @@ for e in entidades:
     print(f"/entidades/{e['id']}/historico: HTTP {h.status_code}, {len(h.json().get('execucoes', []))} execucoes, "
           f"mudancas: {[(m['criterio'], m['de'], m['para'], m['execucao']) for m in h.json().get('mudancas', [])]}")
 print(f"/criterios: {[c['codigo'] for c in cliente.get('/criterios').json()]}")
-print(f"/execucoes: {[x['id'] for x in cliente.get('/execucoes').json()]}")
+execucoes = cliente.get("/execucoes").json()
+print(f"/execucoes: {[x['id'] for x in execucoes['execucoes']]} (fonte: {execucoes['fonte']})")
 print(f"/entidades/nao_existe/avaliacao: HTTP {cliente.get('/entidades/nao_existe/avaliacao').status_code} (esperado 404)")

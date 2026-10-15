@@ -23,6 +23,7 @@ Documentação interativa gerada automaticamente em `/docs` (Swagger), com teste
 | Execuções expostas | Só as oficiais: completas, concluídas, para todas as entidades e já avaliadas | Todas as execuções | Testes parciais (ex.: só o cadastro do Rio) não representam a situação da entidade e confundiriam o histórico |
 | "Melhorou" e "piorou" | Ordem Não atende < Parcial < Atende. Mudança envolvendo Inconclusivo ou Indisponível sai como "sem comparação" | Comparar o score | O §7 pergunta quais itens foram corrigidos e quando: a resposta é por critério. Sem veredito não permite dizer que houve melhora ou piora |
 | Versão do código no histórico | Cada mudança informa se as duas execuções usaram a mesma versão do código | Omitir | A validação mostrou mudanças de resultado causadas pelo sistema, não pelo portal (Caxias 15.4 entre as execuções 19 e 25). O campo evita atribuir ao portal uma mudança do coletor |
+| Banco usado | `GATE_BANCO`, se definido; senão `dados/gate.db`; senão a amostra pública `amostra/gate.db` | Exigir coleta antes de abrir | Quem clona o repositório vê os resultados reais sem 30 min de coleta e sem chave do LLM. A amostra tem CPF mascarado, caminhos relativos e nenhum arquivo bruto (`db/exportar_amostra.py`); `GET /execucoes` informa qual banco está em uso |
 | Arquivos de evidência | Não servidos pela API: só caminho, hash e trecho mascarado | Endpoint de download | Páginas e prints de despesa contêm nome e CPF de credores pessoa física. O trecho gravado já é mascarado; o arquivo bruto, não |
 
 ## 3. Uso

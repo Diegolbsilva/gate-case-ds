@@ -46,6 +46,7 @@ descricao = {c["codigo"]: c["descricao"] for c in criterios}
 
 pagina = st.sidebar.radio("Visão", ["Visão geral", "Por entidade", "Evolução"])
 st.sidebar.caption(f"Execução {entidades[0]['ultima_execucao']} · coleta de {entidades[0]['avaliado_em']}")
+st.sidebar.caption(f"Fonte dos dados: {api.FONTE}")
 st.sidebar.caption("Faixa com * = provisória: um critério essencial não pôde ser verificado nesta execução.")
 
 
@@ -81,7 +82,7 @@ if pagina == "Visão geral":
         color=alt.Color("Entidade:N", scale=escala_cor, legend=None),
         tooltip=["Entidade", "Score", "Faixa", "Cobertura"])
     rotulos = barras.mark_text(align="left", dx=4).encode(text=alt.Text("Score:Q", format=".1f"),
-                                                          color=alt.value("#52514e"))  # texto em tinta, nao na cor da serie
+                                                          color=alt.value("#8a8984"))  # tinta neutra legivel no tema claro e no escuro, nao a cor da serie
     st.altair_chart((barras + rotulos).properties(height=220), width="stretch")
 
     st.subheader("Situação por critério")
