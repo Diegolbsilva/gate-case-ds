@@ -187,7 +187,9 @@ acertos = total = 0
 print(f"\n{'entidade':22} {'crit':5} {'sistema':13} {'gabarito':11} fonte usada / justificativa")
 for (eid, codigo), (status, rotulo, justificativa) in resultados.items():
     esperado = gabarito.get(eid, {}).get(codigo)
-    marca = "" if esperado is None else ("ok" if esperado == status else "DIFERENTE")
+    if isinstance(esperado, dict):  # gabarito com data (4.6 muda a cada dia): so compara no dia conferido
+        esperado = esperado.get(data_avaliacao.isoformat())
+    marca ="" if esperado is None else ("ok" if esperado == status else "DIFERENTE")
     acertos, total = acertos + (marca == "ok"), total + (esperado is not None)
     print(f"{eid:22} {codigo:5} {status:13} {str(esperado):11} {marca:9} {rotulo or '-'} | {justificativa[:90]}")
 print(f"\nConcordancia com o gabarito: {acertos} de {total}")

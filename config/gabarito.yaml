@@ -1,8 +1,18 @@
 # Gabarito: avaliacao manual feita por Diego em 09 e 10/10/2026 (docs/gate_descobertas.md, secao 2).
 # Japeri 1.2 corrigido de Parcial para Atende em 12/10/2026 (card "PORTAL DE TRANSPARENCIA" na capa, 1 clique).
 # Usado so para conferir o resultado das regras; nunca entra no calculo.
-japeri:               {"1.2": atende, "4.1": atende, "4.6": atende, "12.1": parcial, "15.4": nao_atende, "16.2": atende}
-duque_de_caxias:      {"1.2": atende, "4.1": atende, "4.6": atende, "12.1": atende,  "15.4": atende,     "16.2": atende}
-itaborai:             {"1.2": parcial, "4.1": atende, "4.6": atende, "12.1": atende, "15.4": atende,     "16.2": atende}
-cachoeiras_de_macacu: {"1.2": atende, "4.1": atende, "4.6": atende, "12.1": parcial, "15.4": parcial,    "16.2": atende}
-rio_de_janeiro:       {"1.2": atende, "4.1": atende, "4.6": atende, "12.1": atende,  "15.4": atende,     "16.2": atende}
+#
+# 4.6 tem data: o resultado muda a cada dia (dias uteis entre a data mais recente publicada e o dia da avaliacao).
+# A regra so compara no dia em que a conferencia manual foi feita. Data entre aspas, no formato "AAAA-MM-DD".
+# Conferencia manual de 15/10/2026, por volta das 09:45 (data mais recente publicada > dias uteis ate 15/10):
+#   Japeri: Despesas Detalhadas, Prefeitura, 14/09 a 15/10, ultimo empenho 09/10 (n. 925) > 2 dias uteis > parcial
+#   Caxias: Despesas - Todas, CSV exportado: 90 registros de 14/10 (a tela ordenava por outro campo) > atende
+#   Itaborai: "Dados atualizados ate: 14/10/2026" > atende
+#   Cachoeiras: "Ultima atualizacao dos dados em 14/10/2026 22:11" > atende
+#   Rio: Contas Rio, Empenhos, "Data de atualizacao dos dados: 14/10/2026" > atende
+# Para conferir num dia novo, acrescente a entrada desse dia, ex.: "4.6": {"2026-10-10": atende, "2026-10-15": parcial}
+japeri:               {"1.2": atende, "4.1": atende, "4.6": {"2026-10-10": atende, "2026-10-15": parcial}, "12.1": parcial, "15.4": nao_atende, "16.2": atende}
+duque_de_caxias:      {"1.2": atende, "4.1": atende, "4.6": {"2026-10-10": atende, "2026-10-15": atende}, "12.1": atende,  "15.4": atende,     "16.2": atende}
+itaborai:             {"1.2": parcial, "4.1": atende, "4.6": {"2026-10-10": atende, "2026-10-15": atende}, "12.1": atende, "15.4": atende,     "16.2": atende}
+cachoeiras_de_macacu: {"1.2": atende, "4.1": atende, "4.6": {"2026-10-10": atende, "2026-10-15": atende}, "12.1": parcial, "15.4": parcial,    "16.2": atende}
+rio_de_janeiro:       {"1.2": atende, "4.1": atende, "4.6": {"2026-10-10": atende, "2026-10-15": atende}, "12.1": atende,  "15.4": atende,     "16.2": atende}
