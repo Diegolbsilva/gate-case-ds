@@ -26,7 +26,7 @@ Para cada prefeitura, o sistema tenta, nesta ordem:
 | **Janela fixa de 1366x768** | O 1.2 mede se o link do portal precisa de rolagem. Isso depende do tamanho da tela: sem tamanho fixo, o resultado não é reproduzível | Tamanho padrão do navegador: varia entre máquinas |
 | **Identidade honesta** (User-Agent "GATE-MPRJ-Prototipo/0.1" com o link do repositório) | A Betha bloqueia o navegador automatizado padrão (403). Com identidade própria, libera. O site sabe quem acessa | Fingir ser um Chrome comum: funciona, mas não é postura adequada para um órgão de controle |
 | **Espera de 3 segundos** depois de carregar | Tempo para o JavaScript montar a página. Valor prático: suficiente nos 5 portais | Esperar "rede parada" (networkidle): em portais com chamadas contínuas, a espera nunca termina |
-| **3 tentativas, com intervalos de 5 s e 15 s** | Vimos 3 falhas temporárias reais em 2 dias (Caxias 2x, Itaboraí 1x), todas resolvidas na segunda tentativa. O intervalo crescente evita martelar um servidor com problema | Uma tentativa só: transformaria falha temporária em Indisponível. Tentativas sem intervalo: sobrecarregam o servidor |
+| **3 tentativas, com intervalos de 5 s e 15 s** | Foram observadas 3 falhas temporárias reais em 2 dias (Caxias 2x, Itaboraí 1x), todas resolvidas na segunda tentativa. O intervalo crescente evita martelar um servidor com problema | Uma tentativa só: transformaria falha temporária em Indisponível. Tentativas sem intervalo: sobrecarregam o servidor |
 | **Erro reconhecido pelo código HTTP e pelo texto da página** | Caxias mostra o erro dentro de uma janela com HTTP 200 ("Network error IOException"). Só o código HTTP não pegaria | Só o código HTTP: falso "ok" em Caxias |
 | **Tipos de falha:** erro_http, erro_servidor, bloqueio, timeout | Cada tipo tem tratamento diferente na doc e no dashboard (bloqueio pede contato com o fornecedor; erro_servidor, nova tentativa) | Um tipo genérico "erro": perde a informação |
 
@@ -73,15 +73,15 @@ Cada alvo tem uma lista de termos com peso. A nota de um texto é a soma dos pes
 **Regras de escolha:**
 - Clica no texto de **maior nota**. Em empate, no **mais curto** (texto curto costuma ser o item do menu; texto longo costuma ser um bloco com várias coisas).
 - Nota zero ou negativa: não clica e registra "não achado".
-- **Só clica no que uma pessoa conseguiria clicar:** elemento visível na tela, ou elemento com endereço (aí o coletor abre o endereço, que é equivalente). Elemento escondido e sem endereço fica de fora. **Erro real que motivou a regra:** a Betha tem um menu lateral fechado com "Execução Detalhada de Despesas". O robô forçava o clique nesse item escondido, nada acontecia, e o registro dizia sucesso. Os prints de antes e depois eram idênticos.
+- **Só clica no que uma pessoa conseguiria clicar:** elemento visível na tela, ou elemento com endereço (aí o coletor abre o endereço, que é equivalente). Elemento escondido e sem endereço fica de fora. **Erro real que motivou a regra:** a Betha tem um menu lateral fechado com "Execução Detalhada de Despesas". O coletor forçava o clique nesse item escondido, nada acontecia, e o registro dizia sucesso. Os prints de antes e depois eram idênticos.
 - **Clique sem efeito é falha:** se o endereço e o texto da tela são os mesmos antes e depois do clique, o coletor registra "sem_efeito" e não sucesso.
-- **Imagem conta como texto (13/10/2026):** o rótulo de cada elemento clicável inclui o texto alternativo (`alt`) das imagens dentro dele. Banner "Portal da Transparência" feito só de imagem é achado; sem `alt`, nem o robô nem um leitor de tela o identificam, e o 1.2 dá Não atende.
+- **Imagem conta como texto (13/10/2026):** o rótulo de cada elemento clicável inclui o texto alternativo (`alt`) das imagens dentro dele. Banner "Portal da Transparência" feito só de imagem é achado; sem `alt`, nem o coletor nem um leitor de tela o identificam, e o 1.2 dá Não atende.
 - **Capa do site salva (13/10/2026):** a descoberta salva a capa do site oficial (`descoberta_capa_site`, HTML e print) antes de procurar o link. É a evidência do 1.2 e a trava do Não atende: só vale se a capa carregou com conteúdo.
 - **Botão genérico ganha contexto:** "ACESSAR", "Saiba mais" e "Clique aqui" não dizem para onde vão. O rótulo passa a incluir os títulos do card ao redor (ex.: "ACESSAR (Despesas públicas Despesas realizadas pelo município.)"). É genérico: vale para qualquer portal com cards, não só para a Betha. Resultado (execução 6): em Cachoeiras, despesa e RGF passaram a ser achados em 2 cliques (card > consulta), chegando na mesma consulta do gabarito manual.
 - **Até 2 cliques.** O segundo clique só acontece se as duas condições valerem (decidido em 12/10/2026, depois da primeira execução real):
   - o texto tem **nota 6 ou mais**, para não clicar em algo pouco relacionado;
   - o texto foi **revelado pelo primeiro clique**: não estava visível antes dele (um submenu que abriu, uma página nova ou um modal). Um item que já estava na tela antes é **irmão no menu**, não um passo mais fundo. Texto já clicado nunca é clicado de novo, comparando pelo texto e pelo rótulo (texto + title + aria-label).
-  - **Erros reais que motivaram a regra:** em Cachoeiras, o robô foi de "Execução Detalhada de Despesas" para o irmão "... - Educação". Em Caxias, clicou duas vezes em "Pedido de Informação (SIC e e-SIC)", porque o title repetia o texto e o filtro comparava campos diferentes. Os dois erros foram reproduzidos num site simulado: a versão antiga repete os dois, e a nova corrige os dois sem perder o submenu revelado (Caxias: "Prestação de Contas" > "Relatório de Gestão Fiscal").
+  - **Erros reais que motivaram a regra:** em Cachoeiras, o coletor foi de "Execução Detalhada de Despesas" para o irmão "... - Educação". Em Caxias, clicou duas vezes em "Pedido de Informação (SIC e e-SIC)", porque o title repetia o texto e o filtro comparava campos diferentes. Os dois erros foram reproduzidos num site simulado: a versão antiga repete os dois, e a nova corrige os dois sem perder o submenu revelado (Caxias: "Prestação de Contas" > "Relatório de Gestão Fiscal").
 - **Nenhum termo específico de município.** Exemplo real: no Rio, as despesas ficam em "CONTAS RIO", sem a palavra despesa. A descoberta erra, e o sistema usa o cadastro como reserva. Acrescentar "contas rio" ao dicionário seria ajustar a regra a um município, exatamente o que não escala.
 
 **Resultado medido:**
@@ -95,7 +95,7 @@ Cada alvo tem uma lista de termos com peso. A nota de um texto é a soma dos pes
 
 | Alternativa | Por que não agora |
 |---|---|
-| Modelo de aprendizado de máquina para classificar links | Precisa de muitos exemplos rotulados. Temos 5 portais |
+| Modelo de aprendizado de máquina para classificar links | Exige muitos exemplos rotulados; o protótipo tem 5 portais |
 | LLM escolhendo onde clicar | Custo por página, respostas que variam entre execuções, difícil de auditar. Faz sentido como **reserva** quando a melhor nota for baixa (evolução na doc) |
 | Crawler completo do site | Caro, lento, e acessa muitas páginas desnecessárias de um órgão público |
 
@@ -119,7 +119,7 @@ No clique do site para o portal, o sistema registra:
 A descoberta pode trazer a página errada (Rio RGF) ou nenhuma (Rio despesa). Por isso a avaliação não confia na página de olhos fechados. Para cada critério, ela procura a evidência nesta ordem:
 
 1. Na página final do caminho da descoberta.
-2. Nas outras páginas do mesmo caminho (às vezes o robô foi um clique além do necessário).
+2. Nas outras páginas do mesmo caminho (às vezes o coletor foi um clique além do necessário).
 3. Na URL do cadastro, se existir.
 
 | Resultado da busca | Status |
@@ -231,7 +231,7 @@ Com isso, a descoberta acha o portal e as páginas sozinha, e as APIs reconhecem
 - A espera de 3 s para o JavaScript é fixa. Um portal muito lento pode ser lido incompleto.
 - O fechamento de pop-ups cobre os padrões comuns, e não qualquer pop-up.
 - Adaptador Webrun confirmado na execução real de 12/10/2026 (POST JSON). Outros clientes da Modernização ainda não foram testados.
-- No Japeri, o 2º clique do e-SIC entra na página de novo pedido do Fala.BR. O robô não preenche nada, mas a página é desnecessária para a avaliação.
+- No Japeri, o 2º clique do e-SIC entra na página de novo pedido do Fala.BR. O coletor não preenche nada, mas a página é desnecessária para a avaliação.
 
 ## 8. Perguntas que o avaliador pode fazer
 

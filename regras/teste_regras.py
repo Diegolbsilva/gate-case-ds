@@ -7,6 +7,7 @@ from datetime import date, datetime
 
 from coletor.descoberta import extrair_candidatos, pontuar
 from regras import llm_15_4 as llm
+from regras import score as sc
 from regras import verificacoes as v
 
 casos = []
@@ -98,5 +99,21 @@ caso("15.4 5 de 5 = Atende", llm.classificar(5, True), "atende")
 caso("15.4 3 de 5 = Parcial", llm.classificar(3, True), "parcial")
 caso("15.4 0 de 5 com pagina do e-SIC legivel = Nao atende", llm.classificar(0, True), "nao_atende")
 caso("15.4 0 de 5 sem pagina legivel = sem evidencia", llm.classificar(0, False), None)
+
+# score (config/score.yaml)
+import yaml
+cfg_score = yaml.safe_load(open("config/score.yaml", encoding="utf-8"))
+caso("score 4.1 parcial: numero, empenhado e liquidado, sem pago = 0,75",
+     sc.nota_do_criterio("4.1", "parcial", None, {"numero_empenho": True, "fases": ["empenhado", "liquidado"]}, cfg_score), 0.75)
+caso("score 12.1 parcial com 2 quadrimestres de atraso = 1/3",
+     round(sc.nota_do_criterio("12.1", "parcial", None, {"quadrimestres_de_atraso": 2}, cfg_score), 2), 0.33)
+caso("score 12.1 com 4 quadrimestres de atraso nao fica negativa",
+     sc.nota_do_criterio("12.1", "parcial", None, {"quadrimestres_de_atraso": 4}, cfg_score), 0.0)
+caso("score 15.4 parcial usa a nota gravada (3 de 5)", sc.nota_do_criterio("15.4", "parcial", 0.6, {}, cfg_score), 0.6)
+caso("score Indisponivel = 0,5 (punicao leve)", sc.nota_do_criterio("4.6", "indisponivel", None, {}, cfg_score), 0.5)
+caso("score Inconclusivo fica fora do calculo", sc.nota_do_criterio("4.6", "inconclusivo", None, {}, cfg_score), None)
+caso("faixa: 96% com essenciais completos = Diamante", sc.faixa(96, True, cfg_score), "Diamante")
+caso("faixa: 96% sem essenciais completos = Elevado", sc.faixa(96, False, cfg_score), "Elevado")
+caso("faixa: 60% = Intermediario", sc.faixa(60, True, cfg_score), "Intermediario")
 
 print(f"\n{sum(casos)} de {len(casos)} casos ok")

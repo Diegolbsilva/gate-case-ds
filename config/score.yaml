@@ -1,0 +1,32 @@
+# Metodologia do score (decisoes de 15/10/2026, docs/decisoes_score.md). Mudou algum valor: mude a versao.
+versao: "v1-2026-10-15"
+
+# Classificacao de cada criterio e peso de cada classe. O checklist do case nao traz classificacao; a
+# escolhida segue a logica do PNTP (Atricon): Essencial = execucao orcamentaria e financeira (LRF, arts. 48 e
+# 48-A); Obrigatoria = exigida por lei; Recomendada = boa pratica. Pesos iguais aos do PNTP (2; 1,5; 1).
+pesos: {essencial: 2.0, obrigatoria: 1.5, recomendada: 1.0}
+classificacao:
+  "1.2": obrigatoria
+  "4.1": essencial
+  "4.6": essencial
+  "12.1": essencial
+  "15.4": obrigatoria
+  "16.2": obrigatoria
+
+# Notas de status que nao dependem do detalhe da regra.
+nota_indisponivel: 0.5          # site fora do ar: falha da entidade, punicao leve. Inconclusivo (limitacao do sistema) fica fora
+nota_parcial_1_2: 0.5           # link do portal so no submenu (ponto medio adotado por convencao)
+nota_parcial_4_6: 0.5           # de 2 dias uteis ate 30 dias corridos de defasagem (ponto medio adotado por convencao)
+quadrimestres_para_zerar_12_1: 3  # 3 quadrimestres de atraso = um ano sem RGF = mesma nota de nao publicar
+
+# Faixas do PNTP (score em %). As tres primeiras exigem 100% dos criterios essenciais atendidos; quem tem
+# score alto sem isso fica em "Elevado".
+faixas:
+  - {nome: Diamante, minimo: 95, exige_essenciais: true}
+  - {nome: Ouro, minimo: 85, exige_essenciais: true}
+  - {nome: Prata, minimo: 75, exige_essenciais: true}
+  - {nome: Elevado, minimo: 75, exige_essenciais: false}
+  - {nome: Intermediario, minimo: 50, exige_essenciais: false}
+  - {nome: Basico, minimo: 30, exige_essenciais: false}
+  - {nome: Inicial, minimo: 0.1, exige_essenciais: false}
+  - {nome: Inexistente, minimo: 0, exige_essenciais: false}

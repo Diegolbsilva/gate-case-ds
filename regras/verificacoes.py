@@ -14,7 +14,7 @@ Regras decididas (docs/gate_descobertas.md, secao 4, e docs/decisoes_regras.md):
 - 4.6: data mais recente dos dados (API) ou rotulo "dados atualizados ate/em" da pagina. Referencia legal:
   "tempo real" = ate o 1o dia util seguinte ao registro contabil (Decreto 10.540/2020, art. 7o, par. 1o, e
   Anexo incluido pelo Decreto 11.644/2023). Atende: ate 1 dia util de defasagem; Parcial: ate 30 dias
-  corridos (criterio nosso, o decreto nao define parcial); Nao atende: mais de 30 dias (decisao de 13/10/2026).
+  corridos (criterio proprio do sistema, o decreto nao define parcial); Nao atende: mais de 30 dias (decisao de 13/10/2026).
 - 12.1: periodo mais recente publicado, lido no titulo do relatorio, contra o ultimo que ja deveria
   estar publicado (prazo da LRF: 30 dias apos o fim do quadrimestre).
 - 16.2: controle de "alto contraste" no HTML completo da capa do portal, inclusive em menus fechados.

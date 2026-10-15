@@ -31,6 +31,7 @@ import yaml
 
 from coletor import banco
 from regras import llm_15_4 as llm
+from regras import score as sc
 from regras import verificacoes as v
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -41,6 +42,7 @@ ALVO_DESCOBERTA = {"4.1": "despesa", "4.6": "despesa", "12.1": "rgf", "16.2": "p
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", default=RAIZ / "config" / "entidades.yaml")
 parser.add_argument("--gabarito", default=RAIZ / "config" / "gabarito.yaml")
+parser.add_argument("--score", default=RAIZ / "config" / "score.yaml")
 parser.add_argument("--dados", default=RAIZ / "dados")
 parser.add_argument("--execucao", type=int, help="id da execucao; sem isso, a ultima concluida")
 args = parser.parse_args()
@@ -218,4 +220,7 @@ for (eid, codigo), (status, rotulo, justificativa) in resultados.items():
     acertos, total = acertos + (marca == "ok"), total + (esperado is not None)
     print(f"{eid:22} {codigo:5} {status:13} {str(esperado):11} {marca:9} {rotulo or '-'} | {justificativa[:90]}")
 print(f"\nConcordancia com o gabarito: {acertos} de {total}")
+
+# score de cada entidade (regras/score.py), com as avaliacoes que acabaram de ser gravadas
+sc.imprimir(sc.calcular(con, execucao_id, yaml.safe_load(Path(args.score).read_text(encoding="utf-8"))))
 con.close()
