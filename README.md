@@ -89,6 +89,7 @@ Os dados de uma coleta própria ficam em `dados/` (banco `gate.db` e arquivos de
 | `docs/validacao.md` | Validação contra a referência interna e externa |
 | `docs/decisoes_api.md` | API |
 | `docs/decisoes_dashboard.md` | Dashboard |
+| `docs/escalabilidade.md` | Projeção para 5.000 portais, gargalos e arquitetura de produção |
 
 ## Resultado de referência (execução de 15/10/2026)
 
