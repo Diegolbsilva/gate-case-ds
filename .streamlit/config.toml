@@ -1,0 +1,8 @@
+# Configuracao do dashboard (lida pelo Streamlit quando rodado na raiz do projeto).
+[browser]
+# Nao enviar estatisticas de uso ao Streamlit (dados de fiscalizacao: nenhuma telemetria externa).
+gatherUsageStats = false
+
+[server]
+# Sem a pergunta de e-mail na primeira execucao; o endereco aparece no terminal (http://localhost:8501).
+headless = true
