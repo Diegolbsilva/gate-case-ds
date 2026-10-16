@@ -1,8 +1,7 @@
 # Gerado por: python -m regras.validar --execucoes 16 19 25 27 --gravar-confianca
-# Acerto observado por grau de confianca, nas celulas conclusivas com gabarito (config/gabarito.yaml),
-# com o intervalo de 95% de Wilson. Em producao, o gabarito vira a revisao humana amostral continua.
+# Acerto observado por grau de confianca, nas celulas conclusivas com gabarito (config/gabarito.yaml).
 # A API e o dashboard mostram este % ao lado do nivel de cada criterio. Nao entra no score.
-gerado_em: '2026-10-16 10:52:29'
+gerado_em: '2026-10-16 12:39:24'
 execucoes:
 - 16
 - 19
@@ -13,13 +12,7 @@ niveis:
     acertos: 80
     total: 80
     taxa: 1.0
-    intervalo_95:
-    - 0.954
-    - 1.0
   media:
     acertos: 20
     total: 22
     taxa: 0.909
-    intervalo_95:
-    - 0.722
-    - 0.975
