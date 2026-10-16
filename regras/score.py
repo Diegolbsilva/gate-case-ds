@@ -114,7 +114,8 @@ def imprimir(resultado):
         print(f"{eid:22} {(score or 0) * 100:6.1f} {(d['faixa'] or '-') + ('*' if d.get('faixa_provisoria') else ''):13} {'completos' if d['essenciais_completos'] else 'pendentes':11} "
               f"{entraram} de {aplicaveis:<4} {(d['media_simples_binaria'] or 0) * 100:10.1f} {(d['media_simples_notas'] or 0) * 100:11.1f}  "
               f"{', '.join(dict.fromkeys(d['fora_do_calculo'] + d['essenciais_pendentes'])) or '-'}")
-    print("* faixa provisoria: algum criterio essencial ficou Inconclusivo (nao verificado) nesta execucao")
+    if any(d.get("faixa_provisoria") for *_, d in resultado):
+        print("* faixa provisoria: algum criterio essencial ficou Inconclusivo (nao verificado) nesta execucao")
 
 
 if __name__ == "__main__":
