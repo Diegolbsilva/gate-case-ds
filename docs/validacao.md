@@ -1,4 +1,4 @@
-# Validação dos resultados (16/10/2026)
+# Anexo: validação dos resultados
 
 Responde a três pontos do enunciado: §15 (como os resultados da IA são validados), §16 (qualidade dos resultados: consistência e evidências que permitem auditoria) e §18 (avaliar os próprios resultados). Código: `regras/validar.py`. Referências: `config/gabarito.yaml` (interna) e `config/referencias.yaml` (externa).
 
@@ -73,12 +73,12 @@ Todas as divergências têm causa na coleta, não nas regras. Cada correção do
 
 - A ordem das três entidades com selo é preservada (Rio e Caxias à frente de Itaboraí).
 - Nas execuções 25 e 27, Caxias e Itaboraí ficam uma faixa acima do selo. Explicação provável: o sistema mede 6 critérios e o PNTP mais de 100; quem cumpre os 6 tende a ficar no topo.
-- "Provisória": um critério essencial ficou Inconclusivo na execução; a faixa não é rebaixada por limitação do método, mas fica sinalizada (docs/decisoes_score.md).
+- "Provisória": um critério essencial ficou Inconclusivo na execução; a faixa não é rebaixada por limitação do método, mas fica sinalizada (`docs/documentacao_tecnica.md`, seção 6).
 - O score de Caxias subiu entre as execuções sem mudança no portal: o que mudou foi a coleta do 15.4. Consequência para o histórico (§7): comparações entre execuções só indicam mudança do portal quando feitas com a mesma versão do código. Por isso cada execução grava a versão do código (`versao_codigo`) e as coletas antigas podem ser reavaliadas com o código atual.
 
 ## 5. Concordância por grau de confiança (§4)
 
-O nível de cada célula vem da regra `nivel_confianca` (`docs/decisoes_regras.md`, 4.0.2), recalculada pelo `validar` também nas execuções avaliadas antes de a coluna existir.
+O nível de cada célula vem da regra `nivel_confianca` (`docs/documentacao_tecnica.md`, seção 5.6), recalculada pelo `validar` também nas execuções avaliadas antes de a coluna existir.
 
 | Nível | Conclusivas com gabarito | Acertos | Concordância |
 |---|---|---|---|
@@ -88,7 +88,7 @@ O nível de cada célula vem da regra `nivel_confianca` (`docs/decisoes_regras.m
 - Os 2 erros conclusivos (Caxias 15.4 nas execuções 16 e 19) caíram no nível médio, como previsto pela regra: Parcial por subitens não encontrados depende de ausência, e a ausência veio de uma coleta incompleta.
 - Nenhum veredito de confiança alta errou. A separação entre os níveis é o que torna a confiança útil: em escala (§17), a revisão humana pode se concentrar nos vereditos de confiança média (22 de 102 células, cerca de 1 em 5).
 - Os percentuais são gravados em `config/confianca_observada.yaml` e exibidos pela API e pelo dashboard ao lado do nível de cada critério.
-- Amostra pequena: 100% em 80 células não significa que a confiança alta nunca erra; significa que nenhum erro apareceu nesta base.
+- Amostra pequena: 100% em 80 células não significa que a confiança alta nunca erra; significa que nenhum erro apareceu nesta base. Os 2 erros têm a mesma causa, então a separação entre os níveis é um indício, que precisa de mais amostra para ser confirmado. Em produção, a revisão humana amostral contínua amplia a base (`docs/documentacao_tecnica.md`, seção 13.4).
 
 ## 6. Ressalvas
 

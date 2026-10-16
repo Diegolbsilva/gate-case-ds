@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS avaliacoes (
     status         TEXT NOT NULL CHECK (status IN
                      ('atende', 'parcial', 'nao_atende', 'inconclusivo', 'indisponivel', 'nao_aplicavel')),
     nota           REAL CHECK (nota IS NULL OR (nota >= 0 AND nota <= 1)),   -- nota gradual; NULL nos status fora do score
-    confianca      REAL CHECK (confianca IS NULL OR (confianca >= 0 AND confianca <= 1)),   -- reservada: probabilidade calibrada (futuro)
+    confianca      REAL CHECK (confianca IS NULL OR (confianca >= 0 AND confianca <= 1)),   -- reservada: probabilidade de acerto por celula (futuro)
     nivel_confianca TEXT CHECK (nivel_confianca IS NULL OR nivel_confianca IN ('alta', 'media')),  -- regras.verificacoes.nivel_confianca
     metodo         TEXT NOT NULL CHECK (metodo IN ('api', 'pagina', 'navegador', 'llm', 'manual')),
     justificativa  TEXT,                                -- explicacao curta, legivel por humano

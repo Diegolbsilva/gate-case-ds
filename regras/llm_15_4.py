@@ -8,7 +8,7 @@ Por que LLM aqui e regra no resto: o 15.4 e semantico. Cada portal escreve prazo
 procedimentos com palavras diferentes ("20 dias, prorrogaveis por mais 10", "o recurso sera submetido a
 Comissao..."), em pagina, PDF ou infografico. Uma lista de termos erraria muito; o LLM entende o texto.
 
-Como funciona (decisoes de 15/10/2026, docs/decisoes_regras.md):
+Como funciona (docs/documentacao_tecnica.md, secao 11):
 1. Fontes: as paginas do e-SIC salvas pela descoberta, pelo cadastro e pela etapa de anexos, o texto dos
    PDFs e as imagens do caminho de cliques. Pagina "nao encontrada" fica de fora.
 2. Imagem: uma chamada separada TRANSCREVE o texto da imagem, sem saber do criterio (assim nao tem motivo

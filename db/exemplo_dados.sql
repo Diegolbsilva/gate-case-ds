@@ -1,4 +1,4 @@
--- Dados de teste do esquema: SO dados reais da exploracao manual (gate_descobertas.md).
+-- Dados de teste do esquema: SO dados reais da exploracao manual (docs/exploracao_portais.md).
 -- Execucao 1 = exploracao de 09/10/2026 (parcial); execucao 2 = gabarito completo de 10/10/2026.
 -- Notas graduais e pesos ainda nao definidos (metodologia do score em 15/10): ficam NULL / 1.0.
 

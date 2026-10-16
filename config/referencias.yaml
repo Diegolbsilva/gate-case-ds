@@ -1,6 +1,6 @@
 # Referencias externas para a validacao (regras/validar.py). Nunca entram no calculo do score.
 # Selos do Radar da Transparencia Publica (PNTP/Atricon) exibidos nos proprios portais, observados em
-# 09 e 10/10/2026 (docs/gate_descobertas.md, secao 1). Entidade sem selo observado fica de fora.
+# 09 e 10/10/2026 (docs/exploracao_portais.md, secao 5). Entidade sem selo observado fica de fora.
 selos_pntp:
   rio_de_janeiro: {selo: Diamante, ano: 2024}
   duque_de_caxias: {selo: Ouro, ano: 2025}

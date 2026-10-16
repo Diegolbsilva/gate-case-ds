@@ -1,6 +1,6 @@
 """Score de cada entidade numa execucao, a partir das avaliacoes ja gravadas (regras/avaliar.py).
 
-Metodologia (config/score.yaml e docs/decisoes_score.md):
+Metodologia (config/score.yaml e docs/documentacao_tecnica.md, secao 6):
 1. Nota de cada criterio, de 0 a 1: Atende = 1; Nao atende = 0; Parcial = nota gradual pelo detalhe da regra
    (4.1: informacoes achadas / 4; 12.1: 1 - atraso / 3; 15.4: subitens comprovados / 5; 1.2 e 4.6: 0,5);
    Indisponivel = 0,5 (punicao leve: o site fora do ar e falha da entidade).

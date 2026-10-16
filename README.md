@@ -56,6 +56,7 @@ A amostra é gerada por `python db/exportar_amostra.py`, que mascara o CPF de no
 |---|---|---|
 | Execução completa: coleta das 5 entidades, regras, LLM e score | `python -m coletor.executar` | ~20 a 30 min |
 | Só coleta | `python -m coletor.executar --sem-avaliar` | ~20 min |
+| Agendar a execução diária (Windows, uma vez) | `powershell -ExecutionPolicy Bypass -File agendamento\registrar_tarefa.ps1 -Hora 09:00` | segundos |
 | Reavaliar uma coleta já feita (regra nova, sem acessar portal) | `python -m regras.avaliar --execucao N` | ~1 a 4 min |
 | Validação contra o gabarito e os selos do PNTP | `python -m regras.validar --execucoes 16 19 25 27 --gravar-confianca` | segundos |
 | Conferência humana das respostas do LLM | `python -m regras.auditar_15_4 --execucao N` | segundos |
@@ -76,21 +77,16 @@ Os dados de uma coleta própria ficam em `dados/` (banco `gate.db` e arquivos de
 | `dashboard/` | Dashboard |
 | `config/` | Entidades, critérios, checklist original, gabarito manual, parâmetros do score e referências externas |
 | `db/` | Esquema do banco e consultas de exemplo |
-| `docs/` | Decisões técnicas, explorações e validação |
+| `agendamento/` | Tarefa diária do Agendador de Tarefas do Windows (execução automática com `--origem agendada`) |
+| `docs/` | Documentação técnica e anexos |
 
 ## Documentação
 
 | Documento | Assunto |
 |---|---|
-| `docs/documentacao_tecnica.md` | **Documento principal**: os 11 tópicos do §14, uso de IA (§15), escolha dos critérios (§13) e escala (§17), com links para os detalhes |
-| `docs/gate_descobertas.md` | Exploração manual dos portais, gabarito e desafios encontrados |
-| `docs/decisoes_coletor.md` | Coleta: navegador, descoberta, fornecedores, cadastro, anexos, limitações |
-| `docs/decisoes_regras.md` | Regras de cada critério, LLM do 15.4 e resultados por execução |
-| `docs/decisoes_score.md` | Metodologia do score, decisões e problemas da média simples |
-| `docs/validacao.md` | Validação contra a referência interna e externa |
-| `docs/decisoes_api.md` | API |
-| `docs/decisoes_dashboard.md` | Dashboard |
-| `docs/escalabilidade.md` | Projeção para 5.000 portais, gargalos e arquitetura de produção |
+| `docs/documentacao_tecnica.md` | Documento principal: problema, arquitetura, abordagem, metodologia de avaliação e de pontuação, critérios não aplicáveis, erros, atualização, API e dashboard, uso de IA, limitações e escala |
+| `docs/exploracao_portais.md` | Anexo: exploração manual dos 5 portais, gabarito e evidências |
+| `docs/validacao.md` | Anexo: resultados comparados com o gabarito e com os selos do PNTP |
 
 ## Resultado de referência (execução 27, de 16/10/2026)
 

@@ -68,6 +68,8 @@ def score_da_execucao(con, execucao_id, eid):
             "essenciais_completos": d.get("essenciais_completos"), "essenciais_pendentes": d.get("essenciais_pendentes", []),
             "essenciais_nao_verificados": d.get("essenciais_nao_verificados", []),
             "media_simples_binaria": None if d.get("media_simples_binaria") is None else round(d["media_simples_binaria"] * 100, 1),
+            # nota (0 a 1), peso e classificacao de cada criterio, como entraram no calculo (None = fora do calculo)
+            "criterios": d.get("criterios", {}),
             "metodologia": r["metodologia"]}
 
 

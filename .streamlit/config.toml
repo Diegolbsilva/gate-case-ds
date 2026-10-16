@@ -6,3 +6,7 @@ gatherUsageStats = false
 [server]
 # Sem a pergunta de e-mail na primeira execucao; o endereco aparece no terminal (http://localhost:8501).
 headless = true
+
+[theme]
+# Cor de destaque neutra (azul): o vermelho padrao do Streamlit confunde com o status "Nao atende" nas barras de progresso.
+primaryColor = "#2a78d6"

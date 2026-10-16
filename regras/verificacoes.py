@@ -6,7 +6,7 @@ carregou, API sem dados), ou um dicionario:
      "detalhe": dados para a nota gradual do score}
 Quem junta as fontes e escolhe o resultado final e regras/avaliar.py.
 
-Regras decididas (docs/gate_descobertas.md, secao 4, e docs/decisoes_regras.md):
+Regras decididas (docs/documentacao_tecnica.md, secoes 5.3 e 5.4):
 - 1.2: link do portal visivel na capa = Atende (rolar nao conta como clique); so no submenu = Parcial;
   capa carregada e nenhum texto clicavel relacionado a transparencia = Nao atende (decisao de 13/10/2026).
 - 4.1: numero do empenho + valores empenhado, liquidado e pago, em colunas (formato largo) ou em linhas
