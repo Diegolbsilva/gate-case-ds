@@ -66,7 +66,14 @@ Código: `regras/llm_15_4.py`, chamado por `regras/avaliar.py`. Por que LLM só 
 | Respostas guardadas | Tabela `respostas_llm`, por hash do modelo, da versão do prompt e da entrada | Reavaliar a mesma coleta não chama a API de novo (reprodutível e sem custo). É também a trilha de auditoria |
 | Sem chave | 15.4 Inconclusivo, com o motivo; chave só no `.env` (fora do Git), modelo em `.env.exemplo` | Quem testa o projeto não precisa da chave de quem desenvolveu |
 
-Pendentes (14:45 de 15/10): se os PDFs de lei do Rio contam como divulgação na seção do e-SIC; se a página do Fala.BR (plataforma da CGU) conta como seção do e-SIC de Japeri. O detalhe grava o tipo de fonte de cada citação (página, PDF, imagem), então a decisão pode ser aplicada sem chamar o LLM de novo.
+Decisões sobre as fontes (16/10/2026), conferidas com `python -m regras.auditar_15_4 --execucao 27`:
+
+| Decisão | Escolha | Alternativa considerada | Por quê |
+|---|---|---|---|
+| PDF linkado na seção do e-SIC (ex.: Lei 12.527 e Decretos Rio 44.745/2018 e 54.226/2024) | Conta como divulgação | Excluir PDFs de legislação | O decreto municipal é a fonte formal de prazos e autoridades; publicá-lo na seção é divulgação. Excluir exigiria uma heurística para separar legislação de documento de procedimento, que poderia descartar um PDF como o ANEXO 1 de Itaboraí, origem dos 5 subitens comprovados lá. Impacto medido: nenhum, porque os 5 subitens do Rio foram comprovados em páginas (Pedido de informação e Recursos). Custo: os PDFs do Rio são a maior parte dos tokens de entrada, mas as respostas ficam guardadas pelo hash da entrada e lei raramente muda; a execução 27 fez 1 chamada nova ao modelo |
+| Página genérica do Fala.BR (plataforma federal da CGU), destino do e-SIC de Japeri | Entra na entrada do LLM, mas o conteúdo genérico da plataforma não comprova divulgação da prefeitura | Tratar o Fala.BR como a seção do e-SIC de Japeri | Decisão de 12/10 (`docs/gate_descobertas.md`): o canal existe (conta para o 15.1, fora do protótipo), mas prazos, autoridades e procedimentos próprios do município não estão publicados. Na execução 27, o LLM registra que "a fonte F1 é a página geral do Fala.BR e não informa o prazo de resposta"; resultado 0 de 5, igual ao gabarito |
+
+O detalhe grava o tipo de fonte de cada citação (página, PDF, imagem), então uma mudança nessas decisões pode ser aplicada sem chamar o LLM de novo.
 
 ## 4.0.1 Critérios não aplicáveis (§11)
 
@@ -93,6 +100,8 @@ O §4 pede, na saída de cada critério, o "grau de confiança da avaliação, q
 | % observado | `python -m regras.validar --execucoes ... --gravar-confianca` grava o acerto por nível em `config/confianca_observada.yaml`; a API e o dashboard o mostram ao lado do nível | Recalcular a cada consulta | O arquivo versionado registra de quais execuções o número saiu (reprodutível). O nível é recalculado pela mesma regra nas execuções avaliadas antes da coluna existir |
 
 Saída de um critério na API (`GET /entidades/{id}/avaliacao`): `"confianca": {"nivel": "alta", "acerto_observado": 1.0, "base": "N de N celulas corretas nesse nivel na validacao (execucoes ...)"}`.
+
+Resultado (execuções 16, 19, 25 e 27): confiança alta, 80 de 80 células conclusivas corretas (100%); média, 20 de 22 (91%). Os 2 erros (Caxias 15.4 nas execuções 16 e 19, coleta ainda incompleta) caíram no nível médio. Detalhe em `docs/validacao.md`, seção 5.
 
 Evolução: com mais execuções e gabarito, o % por nível pode virar uma probabilidade calibrada por critério e método, gravada na coluna numérica.
 

@@ -45,7 +45,7 @@ O repositório traz uma amostra pública do banco (`amostra/gate.db`) com as exe
 ```
 streamlit run dashboard/app.py
 uvicorn api.app:app --reload
-python -m regras.validar --dados amostra --execucoes 16 19 25
+python -m regras.validar --dados amostra --execucoes 16 19 25 27
 ```
 
 A amostra é gerada por `python db/exportar_amostra.py`, que mascara o CPF de novo em todo texto, troca caminhos locais por caminhos relativos e se recusa a gravar se ainda encontrar algo com formato de CPF.
@@ -57,7 +57,7 @@ A amostra é gerada por `python db/exportar_amostra.py`, que mascara o CPF de no
 | Execução completa: coleta das 5 entidades, regras, LLM e score | `python -m coletor.executar` | ~20 a 30 min |
 | Só coleta | `python -m coletor.executar --sem-avaliar` | ~20 min |
 | Reavaliar uma coleta já feita (regra nova, sem acessar portal) | `python -m regras.avaliar --execucao N` | ~1 a 4 min |
-| Validação contra o gabarito e os selos do PNTP | `python -m regras.validar --execucoes 16 19 25` | segundos |
+| Validação contra o gabarito e os selos do PNTP | `python -m regras.validar --execucoes 16 19 25 27 --gravar-confianca` | segundos |
 | Conferência humana das respostas do LLM | `python -m regras.auditar_15_4 --execucao N` | segundos |
 | Testes das regras e do score | `python -m regras.teste_regras` | segundos |
 | API (documentação interativa em http://127.0.0.1:8000/docs) | `uvicorn api.app:app --reload` | |
@@ -82,6 +82,7 @@ Os dados de uma coleta própria ficam em `dados/` (banco `gate.db` e arquivos de
 
 | Documento | Assunto |
 |---|---|
+| `docs/documentacao_tecnica.md` | **Documento principal**: os 11 tópicos do §14, uso de IA (§15), escolha dos critérios (§13) e escala (§17), com links para os detalhes |
 | `docs/gate_descobertas.md` | Exploração manual dos portais, gabarito e desafios encontrados |
 | `docs/decisoes_coletor.md` | Coleta: navegador, descoberta, fornecedores, cadastro, anexos, limitações |
 | `docs/decisoes_regras.md` | Regras de cada critério, LLM do 15.4 e resultados por execução |
@@ -91,7 +92,7 @@ Os dados de uma coleta própria ficam em `dados/` (banco `gate.db` e arquivos de
 | `docs/decisoes_dashboard.md` | Dashboard |
 | `docs/escalabilidade.md` | Projeção para 5.000 portais, gargalos e arquitetura de produção |
 
-## Resultado de referência (execução de 15/10/2026)
+## Resultado de referência (execução 27, de 16/10/2026)
 
 | Entidade | Score | Faixa |
 |---|---|---|
@@ -99,6 +100,6 @@ Os dados de uma coleta própria ficam em `dados/` (banco `gate.db` e arquivos de
 | Rio de Janeiro | 100,0 | Diamante |
 | Itaboraí | 92,9 | Ouro |
 | Cachoeiras de Macacu | 81,6 | Elevado (RGF atrasado) |
-| Japeri | 74,5 | Intermediário (provisória: 4.6 não verificado) |
+| Japeri | 69,8 | Intermediário (RGF e dados de despesa atrasados) |
 
-Validação nas 3 execuções oficiais: 97% de concordância com o gabarito nas células conclusivas, 4% sem veredito, nenhum Não atende falso (`docs/validacao.md`).
+Validação nas 4 execuções oficiais (13 a 16/10): 98% de concordância com o gabarito nas células conclusivas (100 de 102), 3% sem veredito, nenhum Não atende falso. Por grau de confiança: alta 100% (80 de 80), média 91% (20 de 22) (`docs/validacao.md`).
