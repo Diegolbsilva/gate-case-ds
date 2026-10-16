@@ -21,7 +21,8 @@ for e in entidades:
     a = cliente.get(f"/entidades/{e['id']}/avaliacao")
     h = cliente.get(f"/entidades/{e['id']}/historico")
     print(f"/entidades/{e['id']}/avaliacao: HTTP {a.status_code}, {len(a.json().get('criterios', []))} criterios, "
-          f"{sum(len(c['evidencias']) for c in a.json().get('criterios', []))} evidencias")
+          f"{sum(len(c['evidencias']) for c in a.json().get('criterios', []))} evidencias, confianca: "
+          f"{[(c['codigo'], c['confianca'] and c['confianca']['nivel']) for c in a.json().get('criterios', [])]}")
     print(f"/entidades/{e['id']}/historico: HTTP {h.status_code}, {len(h.json().get('execucoes', []))} execucoes, "
           f"mudancas: {[(m['criterio'], m['de'], m['para'], m['execucao']) for m in h.json().get('mudancas', [])]}")
 print(f"/criterios: {[c['codigo'] for c in cliente.get('/criterios').json()]}")

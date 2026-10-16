@@ -14,7 +14,8 @@ Para cada entidade e criterio:
 4. Nenhuma fonte serviu: Inconclusivo (havia pagina, mas nao deu para ler) ou Indisponivel (nao havia
    nenhuma fonte salva e houve erro de acesso). Os dois ficam fora do score.
 
-Grava em avaliacoes (status, justificativa, detalhe) e evidencias (trecho, arquivo, hash).
+Grava em avaliacoes (status, grau de confianca, justificativa, detalhe) e evidencias (trecho, arquivo, hash).
+Grau de confianca (secao 4): alta ou media, pela natureza da evidencia (regras/verificacoes.py, nivel_confianca).
 Rodar de novo para a mesma execucao apaga e refaz as avaliacoes dela.
 O 15.4 e avaliado pelo LLM (regras/llm_15_4.py), com a citacao de cada subitem conferida no texto de origem.
 
@@ -76,7 +77,7 @@ def gravar_nao_aplicavel(eid, codigo, tipo):
     con.execute("INSERT INTO avaliacoes (execucao_id, entidade_id, criterio_id, status, metodo, justificativa, avaliado_em, "
                 "detalhe_json) VALUES (?, ?, ?, 'nao_aplicavel', 'manual', ?, ?, ?)",
                 (execucao_id, eid, ids_criterios[codigo], justificativa, banco.agora(), json.dumps({"tipo_entidade": tipo})))
-    resultados[(eid, codigo)] = ("nao_aplicavel", None, justificativa)
+    resultados[(eid, codigo)] = ("nao_aplicavel", None, justificativa, None)
 
 
 resultados = {}
@@ -182,10 +183,11 @@ for entidade in cfg["entidades"]:
         detalhe = {"fonte_usada": rotulo, **(res["detalhe"] if res else {}),
                    "fontes_avaliadas": [{"fonte": r, "status": (x["status"] if x else None), "obs": o}
                                         for r, _, x, o in avaliadas]}
+        confianca = v.nivel_confianca(status, detalhe)
         cur = con.execute(
-            "INSERT INTO avaliacoes (execucao_id, entidade_id, criterio_id, status, metodo, justificativa, url_avaliada, "
-            "avaliado_em, detalhe_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (execucao_id, eid, criterio_id, status, metodo, v.mascarar(justificativa),
+            "INSERT INTO avaliacoes (execucao_id, entidade_id, criterio_id, status, nivel_confianca, metodo, justificativa, "
+            "url_avaliada, avaliado_em, detalhe_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (execucao_id, eid, criterio_id, status, confianca, metodo, v.mascarar(justificativa),
              (artefato["url_final"] or artefato["url"]) if artefato else (passo_portal[1] if codigo == "1.2" and passo_portal else None),
              banco.agora(), json.dumps(detalhe, ensure_ascii=False)))
         if res:
@@ -197,7 +199,7 @@ for entidade in cfg["entidades"]:
                  (artefato["url_final"] or artefato["url"]) if artefato else None, v.mascarar(res.get("trecho", ""))[:2000],
                  artefato["caminho"] if artefato else None, artefato["hash"] if artefato else None,
                  artefato["coletado_em"] if artefato else banco.agora()))
-        resultados[(eid, codigo)] = (status, rotulo, justificativa)
+        resultados[(eid, codigo)] = (status, rotulo, justificativa, confianca)
 
     # 15.4: LLM com citacao conferida (regras/llm_15_4.py). Sem fonte: Indisponivel ou Inconclusivo, como os outros.
     if "15.4" not in aplicaveis:
@@ -212,10 +214,11 @@ for entidade in cfg["entidades"]:
             justificativa = ("Nenhuma pagina do e-SIC salva e houve erro de acesso" if status == "indisponivel" else
                              "Nao deu para avaliar com o LLM; revisao humana" + (f" ({res['nao_evidencia']})" if res else
                                                                                  " (nenhuma pagina do e-SIC salva)"))
+        confianca = v.nivel_confianca(status, res.get("detalhe") if res else None)
         cur = con.execute(
-            "INSERT INTO avaliacoes (execucao_id, entidade_id, criterio_id, status, nota, metodo, justificativa, url_avaliada, "
-            "avaliado_em, detalhe_json) VALUES (?, ?, ?, ?, ?, 'llm', ?, ?, ?, ?)",
-            (execucao_id, eid, criterio_id, status, res.get("nota") if res else None, v.mascarar(justificativa),
+            "INSERT INTO avaliacoes (execucao_id, entidade_id, criterio_id, status, nota, nivel_confianca, metodo, justificativa, "
+            "url_avaliada, avaliado_em, detalhe_json) VALUES (?, ?, ?, ?, ?, ?, 'llm', ?, ?, ?, ?)",
+            (execucao_id, eid, criterio_id, status, res.get("nota") if res else None, confianca, v.mascarar(justificativa),
              res["evidencias"][0][0]["url_final"] if res and res.get("evidencias") else None, banco.agora(),
              json.dumps(res.get("detalhe", {}) if res else {}, ensure_ascii=False)))
         for artefato, trecho in (res or {}).get("evidencias", []):
@@ -224,20 +227,20 @@ for entidade in cfg["entidades"]:
                 "VALUES (?, ?, 'trecho', ?, ?, ?, ?, ?)",
                 (cur.lastrowid, artefato["id"], artefato["url_final"] or artefato["url"], v.mascarar(trecho)[:2000],
                  artefato["caminho"], artefato["hash"], artefato["coletado_em"]))
-        resultados[(eid, "15.4")] = (status, "LLM" if res and "status" in res else None, justificativa)
+        resultados[(eid, "15.4")] = (status, "LLM" if res and "status" in res else None, justificativa, confianca)
 con.commit()
 
 # conferencia rapida contra o gabarito manual (nao entra no calculo)
 gabarito = yaml.safe_load(Path(args.gabarito).read_text(encoding="utf-8")) if Path(args.gabarito).exists() else {}
 acertos = total = 0
-print(f"\n{'entidade':22} {'crit':5} {'sistema':13} {'gabarito':11} fonte usada / justificativa")
-for (eid, codigo), (status, rotulo, justificativa) in resultados.items():
+print(f"\n{'entidade':22} {'crit':5} {'sistema':13} {'conf.':6} {'gabarito':11} fonte usada / justificativa")
+for (eid, codigo), (status, rotulo, justificativa, confianca) in resultados.items():
     esperado = gabarito.get(eid, {}).get(codigo)
     if isinstance(esperado, dict):  # gabarito com data (4.6 muda a cada dia): so compara no dia conferido
         esperado = esperado.get(data_avaliacao.isoformat())
     marca ="" if esperado is None else ("ok" if esperado == status else "DIFERENTE")
     acertos, total = acertos + (marca == "ok"), total + (esperado is not None)
-    print(f"{eid:22} {codigo:5} {status:13} {str(esperado):11} {marca:9} {rotulo or '-'} | {justificativa[:90]}")
+    print(f"{eid:22} {codigo:5} {status:13} {confianca or '-':6} {str(esperado):11} {marca:9} {rotulo or '-'} | {justificativa[:90]}")
 print(f"\nConcordancia com o gabarito: {acertos} de {total}")
 
 # score de cada entidade (regras/score.py), com as avaliacoes que acabaram de ser gravadas

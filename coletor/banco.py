@@ -18,6 +18,10 @@ def conectar(caminho_banco):
     con = sqlite3.connect(caminho_banco)
     con.execute("PRAGMA foreign_keys = ON")
     con.executescript(ESQUEMA.read_text(encoding="utf-8"))
+    # Migracao de bancos criados antes de 16/10/2026: CREATE TABLE IF NOT EXISTS nao acrescenta coluna em tabela existente
+    if "nivel_confianca" not in [c[1] for c in con.execute("PRAGMA table_info(avaliacoes)")]:
+        con.execute("ALTER TABLE avaliacoes ADD COLUMN nivel_confianca TEXT "
+                    "CHECK (nivel_confianca IS NULL OR nivel_confianca IN ('alta', 'media'))")
     return con
 
 

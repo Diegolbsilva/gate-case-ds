@@ -13,9 +13,14 @@ Medidas:
 3. Matriz sistema x gabarito: como erra. O erro mais grave e o falso Nao atende (acusa sem prova).
 4. Estabilidade: a mesma celula da o mesmo status em execucoes diferentes (4.6 fica fora: muda com o dia).
 5. Faixa do score x selo do PNTP: a ordem das entidades bate com a referencia externa?
+6. Concordancia por grau de confianca (alta, media): o % de acerto observado em cada nivel, que acompanha o
+   nivel na saida da API e do dashboard. Com --gravar-confianca, grava em config/confianca_observada.yaml.
+   O nivel e recalculado pela mesma regra do avaliar (verificacoes.nivel_confianca), para valer tambem nas
+   execucoes avaliadas antes de a coluna existir.
 
 Uso:  python -m regras.validar                      (todas as execucoes completas das 5 entidades)
       python -m regras.validar --execucoes 16 19 25
+      python -m regras.validar --execucoes 16 19 25 --gravar-confianca
 Saida em tabelas Markdown, prontas para a documentacao.
 """
 import argparse
@@ -26,6 +31,7 @@ from pathlib import Path
 import yaml
 
 from coletor import banco
+from regras import verificacoes as v
 
 RAIZ = Path(__file__).resolve().parent.parent
 CRITERIOS = ["1.2", "4.1", "4.6", "12.1", "15.4", "16.2"]
@@ -38,6 +44,7 @@ parser.add_argument("--dados", default=RAIZ / "dados")
 parser.add_argument("--gabarito", default=RAIZ / "config" / "gabarito.yaml")
 parser.add_argument("--referencias", default=RAIZ / "config" / "referencias.yaml")
 parser.add_argument("--execucoes", type=int, nargs="*")
+parser.add_argument("--gravar-confianca", action="store_true", help="grava o acerto por nivel em config/confianca_observada.yaml")
 args = parser.parse_args()
 
 con = banco.conectar(Path(args.dados) / "gate.db")
@@ -47,16 +54,16 @@ execucoes = args.execucoes or [r[0] for r in con.execute(
     "SELECT id FROM execucoes WHERE status = 'concluida' AND observacao LIKE 'Execucao completa%' "
     "AND observacao NOT LIKE '%(so %' ORDER BY id")]
 
-celulas = []  # (execucao, data, entidade, criterio, sistema, gabarito ou None)
+celulas = []  # (execucao, data, entidade, criterio, sistema, gabarito ou None, nivel de confianca)
 for e in execucoes:
     data = con.execute("SELECT substr(iniciada_em, 1, 10) FROM execucoes WHERE id = ?", (e,)).fetchone()[0]
-    for eid, codigo, status in con.execute(
-            "SELECT a.entidade_id, k.codigo, a.status FROM avaliacoes a JOIN criterios k ON k.id = a.criterio_id "
+    for eid, codigo, status, detalhe in con.execute(
+            "SELECT a.entidade_id, k.codigo, a.status, a.detalhe_json FROM avaliacoes a JOIN criterios k ON k.id = a.criterio_id "
             "WHERE a.execucao_id = ? ORDER BY a.id", (e,)):
         esperado = gabarito.get(eid, {}).get(codigo)
         if isinstance(esperado, dict):  # gabarito com data (4.6): so vale no dia conferido
             esperado = esperado.get(data)
-        celulas.append((e, data, eid, codigo, status, esperado))
+        celulas.append((e, data, eid, codigo, status, esperado, v.nivel_confianca(status, json.loads(detalhe or "{}"))))
 if not celulas:
     raise SystemExit("Nenhuma avaliacao nas execucoes pedidas: rode antes python -m regras.avaliar --execucao N")
 
@@ -107,7 +114,7 @@ print("## Divergencias\n")
 if divergentes:
     print("| Execucao | Entidade | Criterio | Sistema | Gabarito | Justificativa do sistema |")
     print("|---|---|---|---|---|---|")
-    for e, data, eid, codigo, status, esperado in divergentes:
+    for e, data, eid, codigo, status, esperado, _ in divergentes:
         just = con.execute("SELECT a.justificativa FROM avaliacoes a JOIN criterios k ON k.id = a.criterio_id "
                            "WHERE a.execucao_id = ? AND a.entidade_id = ? AND k.codigo = ?", (e, eid, codigo)).fetchone()[0]
         print(f"| {e} | {eid} | {codigo} | {status} | {esperado} | {(just or '')[:120].replace('|', '/')} |")
@@ -117,7 +124,7 @@ else:
 # 4. estabilidade (4.6 fora: o status certo muda com o dia)
 print("\n## Estabilidade entre execucoes (sem o 4.6)\n")
 por_celula = defaultdict(list)
-for e, data, eid, codigo, status, _ in celulas:
+for e, data, eid, codigo, status, _, _ in celulas:
     if codigo != "4.6":
         por_celula[(eid, codigo)].append((e, status))
 estaveis = [k for k, v in por_celula.items() if len({s for _, s in v}) == 1]
@@ -159,4 +166,24 @@ concordantes = sum(
 mesma_faixa = sum(faixas[(eid, ultima)] == selos[eid]["selo"] for eid in com_selo)
 print(f"\nExecucao {ultima}: faixa igual ao selo em {mesma_faixa} de {len(com_selo)} entidades; "
       f"pares de entidades sem inversao de ordem: {concordantes} de {len(pares)}")
+
+# 6. concordancia por grau de confianca (celulas conclusivas com gabarito)
+print("\n## Concordancia por grau de confianca\n")
+print("| Nivel | Conclusivas com gabarito | Acertos | Concordancia |")
+print("|---|---|---|---|")
+por_nivel = {}
+for nivel in ("alta", "media"):
+    conc = [c for c in celulas if c[6] == nivel and c[5] is not None and c[4] not in SEM_VEREDITO]
+    acertos = sum(c[4] == c[5] for c in conc)
+    por_nivel[nivel] = {"acertos": acertos, "total": len(conc), "taxa": round(acertos / len(conc), 3) if conc else None}
+    print(f"| {nivel} | {len(conc)} | {acertos} | {acertos / len(conc):.0%} |" if conc else f"| {nivel} | 0 | - | - |")
+if args.gravar_confianca:
+    destino = RAIZ / "config" / "confianca_observada.yaml"
+    destino.write_text(
+        f"# Gerado por: python -m regras.validar --execucoes {' '.join(map(str, execucoes))} --gravar-confianca\n"
+        "# Acerto observado por grau de confianca, nas celulas conclusivas com gabarito (config/gabarito.yaml).\n"
+        "# A API e o dashboard mostram este % ao lado do nivel de cada criterio. Nao entra no score.\n"
+        + yaml.safe_dump({"gerado_em": banco.agora(), "execucoes": execucoes, "niveis": por_nivel},
+                         allow_unicode=True, sort_keys=False), encoding="utf-8")
+    print(f"\nGravado em {destino}")
 con.close()

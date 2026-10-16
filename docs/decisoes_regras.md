@@ -79,6 +79,23 @@ Pendentes (14:45 de 15/10): se os PDFs de lei do Rio contam como divulgação na
 
 Teste: retirada a aplicabilidade do 16.2 para prefeituras numa cópia do banco, as 5 entidades receberam Não aplicável no 16.2, com cobertura 5 de 5 e score calculado sobre os 5 critérios restantes.
 
+## 4.0.2 Grau de confiança (§4, decisões de 16/10/2026)
+
+O §4 pede, na saída de cada critério, o "grau de confiança da avaliação, quando aplicável", com o exemplo "Confiança: 92%". O enunciado não exige probabilidade; o exemplo é ilustrativo.
+
+| Decisão | Escolha | Alternativas consideradas | Por quê |
+|---|---|---|---|
+| O que é o grau | Nível ordinal (alta ou média) pela natureza da evidência, acompanhado do % de acerto observado nesse nível na validação | % de acerto por critério; confiança declarada pelo LLM; concordância entre duas fontes | Por critério há cerca de 13 células com gabarito, amostra pequena para um % por critério. A confiança declarada por LLM não é calibrada e só cobriria o 15.4. Duas fontes por critério dobrariam a coleta, e nem todo critério tem duas. Agregado por nível, o % tem amostra maior e é medido, não estimado |
+| Regra do nível | **Alta**: o que foi lido prova o veredito (Atende com trecho conferido; 4.6 com a data lida no rótulo da página; Indisponível com os erros de acesso registrados). **Média**: o veredito depende de ausência (Não atende; Parcial por falta de item, subitem ou período) ou de valor inferido (4.6 Parcial pela data máxima dos registros da API, que pode refletir apenas um dia sem despesa) | Um nível por critério, fixo | A presença de uma informação se prova com um trecho; a ausência depende de o sistema ter procurado no lugar certo. A regra é a mesma para os 6 critérios (`regras/verificacoes.py`, `nivel_confianca`) |
+| Inconclusivo e Não aplicável | Sem nível (vazio) | "Baixa" | Não há veredito a qualificar. "Baixa" sugeriria um veredito fraco. Corresponde ao "quando aplicável" do §4 |
+| Entra no score? | Não | Ponderar a nota pela confiança (o §5 cita essa possibilidade) | A confiança mede o sistema, não o portal. Ponderar a nota puniria ou favoreceria a entidade por um limite do método, o mesmo princípio aplicado ao Inconclusivo. A confiança orienta a revisão humana: em escala (§17), os vereditos de confiança média formam a fila de conferência |
+| Armazenamento | Coluna `nivel_confianca` (texto) em `avaliacoes`; a coluna numérica `confianca` fica reservada para uma probabilidade calibrada | Converter em número (alta = 1,0; média = 0,5); guardar no `detalhe_json` | Um número arbitrário pareceria probabilidade sem ser. No JSON, a API e o dashboard teriam que abrir o detalhe. Bancos anteriores recebem a coluna por migração (`coletor/banco.py`) |
+| % observado | `python -m regras.validar --execucoes ... --gravar-confianca` grava o acerto por nível em `config/confianca_observada.yaml`; a API e o dashboard o mostram ao lado do nível | Recalcular a cada consulta | O arquivo versionado registra de quais execuções o número saiu (reprodutível). O nível é recalculado pela mesma regra nas execuções avaliadas antes da coluna existir |
+
+Saída de um critério na API (`GET /entidades/{id}/avaliacao`): `"confianca": {"nivel": "alta", "acerto_observado": 1.0, "base": "N de N celulas corretas nesse nivel na validacao (execucoes ...)"}`.
+
+Evolução: com mais execuções e gabarito, o % por nível pode virar uma probabilidade calibrada por critério e método, gravada na coluna numérica.
+
 ## 4.1 Limitações e melhorias futuras
 
 | Limitação | Efeito | Melhoria futura |

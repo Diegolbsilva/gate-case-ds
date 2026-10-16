@@ -32,6 +32,9 @@ elif (RAIZ / "dados" / "gate.db").exists():
 else:
     BANCO, FONTE = RAIZ / "amostra" / "gate.db", "amostra publica (amostra/gate.db)"
 CFG_SCORE = yaml.safe_load((RAIZ / "config" / "score.yaml").read_text(encoding="utf-8"))
+# Acerto observado por grau de confianca na validacao (gerado por regras.validar --gravar-confianca)
+ARQ_CONFIANCA = RAIZ / "config" / "confianca_observada.yaml"
+CONFIANCA = yaml.safe_load(ARQ_CONFIANCA.read_text(encoding="utf-8")) if ARQ_CONFIANCA.exists() else None
 ORDEM = {"nao_atende": 0, "parcial": 1, "atende": 2}  # para dizer se um criterio melhorou ou piorou
 SQL_OFICIAIS = ("SELECT e.id, e.iniciada_em, e.versao_codigo FROM execucoes e WHERE e.status = 'concluida' "
                 "AND e.observacao LIKE 'Execucao completa%' AND e.observacao NOT LIKE '%(so %' "
@@ -121,7 +124,8 @@ def criterios_da_entidade(entidade_id: str):
                 "ORDER BY CAST(k.codigo AS REAL)", (entidade["tipo"],))]
 
 
-@app.get("/entidades/{entidade_id}/avaliacao", summary="Avaliacao mais recente de uma entidade, com evidencias")
+@app.get("/entidades/{entidade_id}/avaliacao",
+         summary="Avaliacao mais recente de uma entidade, com evidencias e grau de confianca de cada criterio")
 def avaliacao_mais_recente(entidade_id: str):
     con = conectar()
     entidade = entidade_ou_404(con, entidade_id)
@@ -131,13 +135,19 @@ def avaliacao_mais_recente(entidade_id: str):
     ultima = execs[-1]
     criterios = []
     for a in con.execute(
-            "SELECT a.id, k.codigo, k.categoria, k.descricao, a.status, a.nota, a.metodo, a.justificativa, a.url_avaliada, "
-            "a.avaliado_em FROM avaliacoes a JOIN criterios k ON k.id = a.criterio_id "
+            "SELECT a.id, k.codigo, k.categoria, k.descricao, a.status, a.nota, a.nivel_confianca, a.metodo, a.justificativa, "
+            "a.url_avaliada, a.avaliado_em FROM avaliacoes a JOIN criterios k ON k.id = a.criterio_id "
             "WHERE a.execucao_id = ? AND a.entidade_id = ? ORDER BY a.id", (ultima["id"], entidade_id)):
         evidencias = [dict(ev) for ev in con.execute(
             "SELECT tipo, url, conteudo AS trecho, caminho_arquivo, hash_sha256, coletado_em FROM evidencias "
             "WHERE avaliacao_id = ?", (a["id"],))]
-        item = {k: a[k] for k in a.keys() if k != "id"}
+        item = {k: a[k] for k in a.keys() if k not in ("id", "nivel_confianca")}
+        observado = (CONFIANCA or {}).get("niveis", {}).get(a["nivel_confianca"]) if a["nivel_confianca"] else None
+        item["confianca"] = None if not a["nivel_confianca"] else {
+            "nivel": a["nivel_confianca"],
+            "acerto_observado": observado and observado["taxa"],
+            "base": observado and (f"{observado['acertos']} de {observado['total']} celulas corretas nesse nivel na validacao "
+                                   f"(execucoes {', '.join(map(str, CONFIANCA['execucoes']))})")}
         criterios.append({**item, "evidencias": evidencias})
     return {"entidade": entidade, "execucao": ultima, "score": score_da_execucao(con, ultima["id"], entidade_id),
             "criterios": criterios}

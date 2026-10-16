@@ -22,7 +22,7 @@ STATUS = {
     "nao_atende": ("✖ Não atende", "#d03b3b"),
     "inconclusivo": ("? Inconclusivo", "#a8a7a1"),
     "indisponivel": ("⚠ Indisponível", "#ec835a"),
-    "nao_aplicavel": ("– Não aplicável", "#d8d7d2"),
+    "nao_aplicavel": ("⊘ Não aplicável", "#d8d7d2"),
 }
 # Cor fixa por entidade (paleta categorica, em ordem): a cor segue a entidade em qualquer filtro.
 CORES_ENTIDADES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
@@ -120,8 +120,13 @@ elif pagina == "Por entidade":
     for c in sorted(avaliacao["criterios"], key=lambda c: float(c["codigo"])):
         rotulo = STATUS.get(c["status"], (c["status"], ""))[0]
         nota = "" if c["nota"] is None else f" · nota {c['nota']:.2f}"
-        with st.expander(f"{c['codigo']} · {rotulo}{nota} · {descricao.get(c['codigo'], '')}"):
+        conf = c.get("confianca")
+        nivel = f" · confiança {'alta' if conf['nivel'] == 'alta' else 'média'}" if conf else ""
+        with st.expander(f"{c['codigo']} · {rotulo}{nota}{nivel} · {descricao.get(c['codigo'], '')}"):
             st.write(c["justificativa"])
+            if conf and conf["acerto_observado"] is not None:
+                st.caption(f"Confiança {'alta' if conf['nivel'] == 'alta' else 'média'}: "
+                           f"{conf['acerto_observado']:.0%} de acerto observado ({conf['base']})")
             st.caption(f"Método: {c['metodo']} · página avaliada: {c['url_avaliada'] or '-'}")
             for ev in c["evidencias"]:
                 st.code(ev["trecho"] or "(sem trecho)", language=None)

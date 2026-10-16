@@ -116,4 +116,16 @@ caso("faixa: 96% com essenciais completos = Diamante", sc.faixa(96, True, cfg_sc
 caso("faixa: 96% sem essenciais completos = Elevado", sc.faixa(96, False, cfg_score), "Elevado")
 caso("faixa: 60% = Intermediario", sc.faixa(60, True, cfg_score), "Intermediario")
 
+# grau de confianca (secao 4): alta quando o lido prova o veredito; media quando depende de ausencia ou inferencia
+caso("confianca: Atende = alta", v.nivel_confianca("atende", {}), "alta")
+caso("confianca: Nao atende = media (ausencia nao se prova com trecho)", v.nivel_confianca("nao_atende", {}), "media")
+caso("confianca: 15.4 Parcial (subitens faltando) = media", v.nivel_confianca("parcial", {"subitens": {}}), "media")
+caso("confianca: 4.6 Parcial com data lida no rotulo da pagina = alta",
+     v.nivel_confianca("parcial", {"origem": "rotulo 'dados atualizados ate' na pagina"}), "alta")
+caso("confianca: 4.6 Parcial pela data maxima da API = media",
+     v.nivel_confianca("parcial", {"origem": "data mais recente dos registros da API"}), "media")
+caso("confianca: Indisponivel = alta (erros de acesso registrados)", v.nivel_confianca("indisponivel", {}), "alta")
+caso("confianca: Inconclusivo = sem nivel", v.nivel_confianca("inconclusivo", {}), None)
+caso("confianca: Nao aplicavel = sem nivel", v.nivel_confianca("nao_aplicavel", None), None)
+
 print(f"\n{sum(casos)} de {len(casos)} casos ok")

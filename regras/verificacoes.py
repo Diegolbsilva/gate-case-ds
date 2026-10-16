@@ -349,3 +349,22 @@ def regra_16_2_pagina(html):
                     "trecho": f"<{el.name}> {achado}", "detalhe": {"elemento": el.name, "texto": achado}}
     return {"status": "nao_atende", "justificativa": "Nenhum controle de alto contraste no HTML completo da capa do portal",
             "trecho": "", "detalhe": {}}
+
+
+# ---------------------------------------------------------------- grau de confianca (secao 4 do enunciado)
+
+def nivel_confianca(status, detalhe):
+    """Grau de confianca do veredito, pela natureza da evidencia (decisao de 16/10/2026). Vale para os 6 criterios.
+    A presenca de uma informacao se prova com um trecho; a ausencia depende de o sistema ter olhado no lugar certo.
+    - alta: o que foi lido prova o veredito (Atende com trecho conferido; 4.6 com a data lida no rotulo da pagina;
+      Indisponivel com os erros de acesso registrados);
+    - media: o veredito depende de ausencia (Nao atende; Parcial por falta de item, de subitem ou de periodo) ou de
+      valor inferido (4.6 Parcial pela data mais recente dos registros da API: pode nao ter havido despesa no dia);
+    - None: sem veredito (Inconclusivo) ou fora da avaliacao (Nao aplicavel): o "quando aplicavel" do enunciado."""
+    if status in ("inconclusivo", "nao_aplicavel"):
+        return None
+    if status in ("atende", "indisponivel"):
+        return "alta"
+    if str((detalhe or {}).get("origem", "")).startswith("rotulo "):
+        return "alta"  # 4.6: "dados atualizados ate DD/MM" lido na pagina; a defasagem e conta, nao inferencia
+    return "media"
